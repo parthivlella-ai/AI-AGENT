@@ -854,10 +854,15 @@ app.delete('/api/chat', authenticateToken, (req, res) => {
 });
 
 // Serve Static Frontend Assets
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname)));
 
 // Fallback SPA routing
 app.use((req, res) => {
+  const publicIndex = path.join(__dirname, 'public', 'index.html');
+  if (fs.existsSync(publicIndex)) {
+    return res.sendFile(publicIndex);
+  }
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
