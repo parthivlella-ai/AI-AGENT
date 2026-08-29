@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Where Did My Money Go? — AI Spending Behavior Analyst</title>
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="dark-mode">
+
+  <!-- ==========================================
+       PUBLIC LANDING PAGE OVERLAY
+       ========================================== -->
+  <div id="screen-landing" class="overlay-screen">
+    <!-- Landing Top Nav -->
+    <header class="landing-nav">
+      <div class="logo">
+        <i data-lucide="brain-circuit"></i>
+        <span>Where Did My Money Go?</span>
+      </div>
+      <div class="landing-nav-actions">
+        <button id="landing-login-btn" class="btn btn-secondary btn-sm">
+          <i data-lucide="log-in"></i> Login
+        </button>
+        <button id="landing-signup-btn" class="btn btn-primary btn-sm">
+          <i data-lucide="user-plus"></i> Create Account
+        </button>
+      </div>
+    </header>
+
+    <div class="landing-hero">
+      <div class="landing-tagline">Don't just track your money. Understand it.</div>
+      <h1 class="landing-title">Where Did My Money Go?</h1>
+      <p class="landing-subtitle">Your AI-powered spending behavior analyst. Discover hidden behavioral patterns, plug financial leaks, and build realistic savings habits.</p>
+      <div class="landing-ctas">
+        <button id="landing-start-signup-btn" class="btn btn-primary btn-lg">
+          <i data-lucide="user-plus"></i> Create Account
+        </button>
+        <button id="landing-start-login-btn" class="btn btn-secondary btn-lg">
+          <i data-lucide="log-in"></i> Login
+        </button>
+        <button id="onboarding-load-demo" class="btn btn-tertiary btn-lg">
+          <i data-lucide="database"></i> Explore Demo
+        </button>
+      </div>
+    </div>
+
+    <div class="landing-comparison">
+      <h2 class="landing-comparison-title">Traditional Trackers vs. Our AI Analyst</h2>
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <h3 class="comparison-header">
+            <i data-lucide="x-circle" style="color: var(--danger);"></i> Traditional Trackers Tell You WHAT
+          </h3>
+          <ul class="comparison-list">
+            <li class="comparison-item">
+              <i data-lucide="minus" style="color: var(--text-muted);"></i> Shows static category charts: <i>"Food: ₹3,200"</i>
+            </li>
+            <li class="comparison-item">
+              <i data-lucide="minus" style="color: var(--text-muted);"></i> Requires tedious manual categorization for every item.
+            </li>
+            <li class="comparison-item">
+              <i data-lucide="minus" style="color: var(--text-muted);"></i> No explanation of budget increases or behaviors.
+            </li>
+          </ul>
+        </div>
+        <div class="comparison-card accent-border">
+          <h3 class="comparison-header" style="color: var(--accent);">
+            <i data-lucide="check-circle" style="color: var(--success);"></i> We Tell You WHY and HOW
+          </h3>
+          <ul class="comparison-list">
+            <li class="comparison-item">
+              <i data-lucide="check" style="color: var(--success);"></i> Triggers behavioral alerts: <i>"Your late-night deliveries increased 33%. Saving target: ₹1,100."</i>
+            </li>
+            <li class="comparison-item">
+              <i data-lucide="check" style="color: var(--success);"></i> Auto-detects categories from merchant descriptions.
+            </li>
+            <li class="comparison-item">
+              <i data-lucide="check" style="color: var(--success);"></i> Generates dynamic simulators and interactive action plans.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MAIN APPLICATION LAYOUT (PROTECTED AREA)
+       ========================================== -->
+  <div class="app-container" style="display: none;">
+    
+    <!-- Desktop Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <i data-lucide="brain-circuit"></i>
+          <div>
+            <span>Where Did My Money Go?</span>
+            <div class="logo-sub">AI Spending Analyst</div>
+          </div>
+        </div>
+      </div>
+      
+      <ul class="sidebar-menu">
+        <li class="nav-item active" data-screen="screen-dashboard">
+          <i data-lucide="layout-dashboard"></i> Dashboard
+        </li>
+        <li class="nav-item" data-screen="screen-transactions">
+          <i data-lucide="list-collapse"></i> Transactions
+        </li>
+        <li class="nav-item" data-screen="screen-where-did-it-go">
+          <i data-lucide="split"></i> Cash Flow Analysis
+        </li>
+        <li class="nav-item" data-screen="screen-insights">
+          <i data-lucide="alert-triangle"></i> AI Insights
+        </li>
+        <li class="nav-item" data-screen="screen-action-plan">
+          <i data-lucide="check-square"></i> Action Plan
+        </li>
+        <li class="nav-item" data-screen="screen-simulator">
+          <i data-lucide="sliders"></i> Savings Simulator
+        </li>
+        <li class="nav-item" data-screen="screen-chat">
+          <i data-lucide="message-square"></i> AI Chat Assistant
+        </li>
+        <li class="nav-item" data-screen="screen-import">
+          <i data-lucide="upload-cloud"></i> Import CSV
+        </li>
+        <li class="nav-item" data-screen="screen-settings">
+          <i data-lucide="settings"></i> Settings
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <button id="theme-toggle-btn" class="btn btn-secondary" style="width: 100%;">
+          <i data-lucide="sun"></i> Toggle Theme
+        </button>
+        <div style="font-size: 0.75rem; text-align: center; color: var(--text-muted); margin-top: 4px;">
+          Private & Isolated Sandbox
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+      
+      <!-- Top Bar Header (Desktop) -->
+      <header class="top-bar">
+        <div class="page-title-container">
+          <h1 id="desktop-page-title">Dashboard Overview</h1>
+        </div>
+        <div class="top-bar-actions">
+          <button id="add-tx-btn" class="btn btn-primary">
+            <i data-lucide="plus"></i> Add Transaction
+          </button>
+          
+          <!-- User Profile Menu -->
+          <div class="profile-menu-container" id="profile-menu-container">
+            <button class="profile-chip" id="profile-chip-btn" aria-haspopup="true" aria-expanded="false">
+              <div class="profile-avatar" id="topbar-avatar">U</div>
+              <span class="profile-name" id="topbar-user-name">User</span>
+              <i data-lucide="chevron-down" width="14" height="14"></i>
+            </button>
+            <div class="profile-dropdown" id="profile-dropdown-menu">
+              <div class="profile-dropdown-header">
+                <div class="profile-dropdown-name" id="dropdown-user-name">User</div>
+                <div class="profile-dropdown-email" id="dropdown-user-email">user@example.com</div>
+              </div>
+              <div class="profile-dropdown-divider"></div>
+              <button class="profile-dropdown-item" id="dropdown-btn-profile">
+                <i data-lucide="user"></i> My Profile
+              </button>
+              <button class="profile-dropdown-item" id="dropdown-btn-settings">
+                <i data-lucide="settings"></i> Settings
+              </button>
+              <div class="profile-dropdown-divider"></div>
+              <button class="profile-dropdown-item text-danger" id="dropdown-btn-logout">
+                <i data-lucide="log-out"></i> Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Mobile Top Bar (Responsive Mobile View) -->
+      <header class="mobile-top-bar">
+        <button id="mobile-menu-btn" class="icon-btn">
+          <i data-lucide="menu"></i>
+        </button>
+        <div class="logo" style="font-size: 0.95rem;">
+          <i data-lucide="brain-circuit"></i> WDMMG?
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="icon-btn" onclick="document.getElementById('add-tx-btn').click()">
+            <i data-lucide="plus"></i>
+          </button>
+          <button class="icon-btn" id="mobile-logout-btn" title="Logout">
+            <i data-lucide="log-out"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Content Views SPA Screens -->
+      <div class="content-body">
+        
+        <!-- Screen: Dashboard -->
+        <section id="screen-dashboard" class="app-screen active">
+          
+          <!-- Personalized Greeting Header -->
+          <div class="dashboard-greeting-banner">
+            <h2 class="dash-greeting-title" id="dash-greeting-title">Good morning, User 👋</h2>
+            <p class="dash-greeting-sub">Here's what your money is telling you this month.</p>
+          </div>
+
+          <!-- First-Time User Onboarding / Empty State -->
+          <div id="dashboard-empty-state" class="empty-state" style="display: none;">
+            <div class="empty-state-badge">
+              <i data-lucide="sparkles"></i> First-Time Setup
+            </div>
+            <h2 class="empty-state-title" id="onboarding-welcome-title">Welcome to Where Did My Money Go? 👋</h2>
+            <p class="empty-state-text">Add a few transactions and I'll help you discover your spending patterns, spot hidden leaks, and build your personalized savings plan.</p>
+            <div class="empty-state-actions">
+              <button class="btn btn-primary btn-md" onclick="document.getElementById('add-tx-btn').click()">
+                <i data-lucide="plus"></i> Add First Transaction
+              </button>
+              <button class="btn btn-secondary btn-md" onclick="window.AppUIRender.switchScreen('screen-import')">
+                <i data-lucide="upload-cloud"></i> Import CSV
+              </button>
+              <button class="btn btn-secondary btn-md" id="dash-load-demo-btn">
+                <i data-lucide="database"></i> Load Demo Data
+              </button>
+            </div>
+          </div>
+
+          <!-- Main Dashboard Content -->
+          <div id="dashboard-content-area">
+            <!-- Aggregate Metric Cards -->
+            <div class="dashboard-grid">
+              <div class="card metric-card">
+                <div class="metric-card-header">
+                  <span>TOTAL SPENT THIS MONTH</span>
+                  <div class="metric-card-icon"><i data-lucide="credit-card"></i></div>
+                </div>
+                <div class="metric-value" id="dash-total-spent">₹0</div>
+                <div class="metric-change" id="dash-spent-change">
+                  <span>+0% vs last month</span>
+                </div>
+              </div>
+
+              <div class="card metric-card">
+                <div class="metric-card-header">
+                  <span>AVERAGE DAILY SPEND</span>
+                  <div class="metric-card-icon"><i data-lucide="trending-up"></i></div>
+                </div>
+                <div class="metric-value" id="dash-daily-avg">₹0</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">Excluding Rent / Big bills</div>
+              </div>
+
+              <div class="card metric-card">
+                <div class="metric-card-header">
+                  <span>LARGEST CATEGORY</span>
+                  <div class="metric-card-icon"><i data-lucide="pie-chart"></i></div>
+                </div>
+                <div class="metric-value" id="dash-largest-cat" style="font-size: 1.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Other</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">Highest discretionary</div>
+              </div>
+
+              <div class="card metric-card">
+                <div class="metric-card-header">
+                  <span>ACTIVE PLAN POTENTIAL SAVE</span>
+                  <div class="metric-card-icon"><i data-lucide="shield-check"></i></div>
+                </div>
+                <div class="metric-value" id="dash-potential-saving" style="color: var(--success);">₹0</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">Total monthly potential</div>
+              </div>
+            </div>
+
+            <!-- "What your money is telling you" AI summary narrative -->
+            <div class="card section-card" style="margin-bottom: 24px;">
+              <h2 class="section-title"><i data-lucide="sparkles" style="color: var(--accent);"></i> What your money is telling you</h2>
+              <div id="dash-ai-story" class="ai-story-container" style="margin-top: 12px; margin-bottom: 0;">
+                Analyzing transactions...
+              </div>
+            </div>
+
+            <!-- Graphs & Leak Section Columns -->
+            <div class="sections-wrapper">
+              <!-- Charts Section -->
+              <div class="card section-card">
+                <div class="section-header">
+                  <h2 class="section-title"><i data-lucide="bar-chart-3"></i> Spending Aggregations</h2>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 32px;">
+                  <div style="height: 220px; position: relative;">
+                    <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">Category Breakdown</h3>
+                    <canvas id="chart-category-donut"></canvas>
+                  </div>
+                  
+                  <div style="height: 180px; position: relative;">
+                    <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">Daily Spending (Current Month)</h3>
+                    <canvas id="chart-daily-bars"></canvas>
+                  </div>
+                  
+                  <div style="height: 180px; position: relative;">
+                    <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">Spending by Time of Day</h3>
+                    <canvas id="chart-time-day"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Score Card & Leaks Side Block -->
+              <div style="display: flex; flex-direction: column; gap: 24px;">
+                <!-- Spending Score -->
+                <div class="card" style="text-align: center;">
+                  <h2 class="section-title" style="justify-content: center; margin-bottom: 12px;">Spending Awareness Score</h2>
+                  <div class="spend-score-widget">
+                    <div class="spend-score-circle">
+                      <span class="spend-score-num" id="dash-score-num">85</span>
+                      <span class="spend-score-label">/ 100</span>
+                    </div>
+                    <p class="spend-score-desc" id="dash-score-msg">Consistency and leaks metric.</p>
+                  </div>
+                </div>
+
+                <!-- Top 3 Money Leaks -->
+                <div class="card" style="flex: 1;">
+                  <h2 class="section-title" style="margin-bottom: 16px;"><i data-lucide="droplet" style="color: var(--danger);"></i> Top Money Leaks</h2>
+                  <div id="dash-leaks-container" class="ai-leak-list">
+                    <!-- Top 3 items loaded dynamically -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Screen: Transactions Table -->
+        <section id="screen-transactions" class="app-screen">
+          <div class="table-filters">
+            <div class="search-input-wrapper">
+              <i data-lucide="search" width="16" height="16"></i>
+              <input type="text" id="tx-search-input" class="search-input" placeholder="Search merchant or notes...">
+            </div>
+            
+            <select id="tx-filter-category" class="filter-select">
+              <option value="">All Categories</option>
+              <option value="Food">Food</option>
+              <option value="Groceries">Groceries</option>
+              <option value="Transportation">Transportation</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Bills">Bills</option>
+              <option value="Subscriptions">Subscriptions</option>
+              <option value="Education">Education</option>
+              <option value="Healthcare">Healthcare</option>
+              <option value="Travel">Travel</option>
+              <option value="Other">Other</option>
+            </select>
+
+            <select id="tx-filter-type" class="filter-select">
+              <option value="">All Types</option>
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
+
+            <select id="tx-filter-sort" class="filter-select">
+              <option value="date-desc">Newest First</option>
+              <option value="date-asc">Oldest First</option>
+              <option value="amount-desc">Amount: High to Low</option>
+              <option value="amount-asc">Amount: Low to High</option>
+            </select>
+          </div>
+
+          <div class="table-container">
+            <table class="transactions-table">
+              <thead>
+                <tr>
+                  <th>Date & Time</th>
+                  <th>Merchant</th>
+                  <th>Category</th>
+                  <th>Amount</th>
+                  <th>Payment Method</th>
+                  <th>Notes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tx-table-body">
+                <!-- Dynamically generated rows -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-pagination">
+            <span id="tx-pagination-info">Showing 0 to 0 of 0 transactions</span>
+            <div class="pagination-controls">
+              <button id="tx-pagination-prev" class="btn btn-secondary btn-sm" disabled>Previous</button>
+              <button id="tx-pagination-next" class="btn btn-secondary btn-sm" disabled>Next</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Screen: Where Did My Money Go Flow -->
+        <section id="screen-where-did-it-go" class="app-screen">
+          <div class="card" style="margin-bottom: 24px;">
+            <h2 class="section-title" style="margin-bottom: 12px;"><i data-lucide="split"></i> Cash Flow Allocation</h2>
+            <p style="font-size: 0.9rem; color: var(--text-secondary);">Visualize how your income moves from essentials to discretionary spending, highlighting the estimated portion you can potentially save.</p>
+          </div>
+
+          <div class="card">
+            <!-- Custom CSS Stacked Sankey Diagram Alternative -->
+            <div class="flow-diagram-container">
+              
+              <!-- Row 1: Income -->
+              <div class="flow-step-row">
+                <div class="flow-node income" id="flow-node-income">
+                  <div class="flow-node-title">TOTAL INCOME CREDIT</div>
+                  <div class="flow-node-value" id="flow-val-income">₹0</div>
+                  <div class="flow-node-percentage">100% credit flow</div>
+                </div>
+              </div>
+
+              <div class="flow-connector-vertical"></div>
+
+              <!-- Row 2: Splits into Essentials vs Discretionary -->
+              <div class="flow-step-row" style="gap: 160px;">
+                <div class="flow-node essentials">
+                  <div class="flow-node-title">ESSENTIAL SPENDING</div>
+                  <div class="flow-node-value" id="flow-val-essentials">₹0</div>
+                  <div class="flow-node-percentage" id="flow-pct-essentials">0% of income</div>
+                  <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">Bills, Rent, Groceries, Health</span>
+                </div>
+
+                <div class="flow-node discretionary">
+                  <div class="flow-node-title">DISCRETIONARY SPENDING</div>
+                  <div class="flow-node-value" id="flow-val-discretionary">₹0</div>
+                  <div class="flow-node-percentage" id="flow-pct-discretionary">0% of income</div>
+                  <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">Shopping, Food delivery, Fun</span>
+                </div>
+              </div>
+
+              <!-- Connector from Discretionary splits into Avoidable Leaks & Savings -->
+              <div class="flow-step-row" style="justify-content: flex-end;">
+                <div style="width: 250px; display: flex; flex-direction: column; align-items: center;">
+                  <div class="flow-connector-vertical"></div>
+                  
+                  <div style="display: flex; gap: 24px; width: 100%;">
+                    <div class="flow-node avoidable" id="flow-node-avoidable">
+                      <div class="flow-node-title">POTENTIALLY AVOIDABLE</div>
+                      <div class="flow-node-value" id="flow-val-avoidable" style="color: var(--danger);">₹0</div>
+                      <div class="flow-node-percentage" id="flow-pct-avoidable">0% of discretionary</div>
+                      <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">Late delivery, micro fees</span>
+                    </div>
+
+                    <div class="flow-node savings" id="flow-node-savings">
+                      <div class="flow-node-title">MONTHLY CASH SAVED</div>
+                      <div class="flow-node-value" id="flow-val-savings" style="color: var(--success);">₹0</div>
+                      <div class="flow-node-percentage" id="flow-pct-savings">0% rate</div>
+                      <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">Net unspent balance</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- Screen: AI Insights Detailed Cards -->
+        <section id="screen-insights" class="app-screen">
+          <div class="card" style="margin-bottom: 24px;">
+            <h2 class="section-title" style="margin-bottom: 12px;"><i data-lucide="sparkles"></i> AI spending behavior analysis</h2>
+            <p style="font-size: 0.9rem; color: var(--text-secondary);">We analyze your transactions to spot specific, repetitive behaviors. Review coaching suggestions and add them to your Action Plan to start saving.</p>
+          </div>
+
+          <div id="insights-grid-container" class="insight-grid">
+            <!-- Dynamic insights cards -->
+          </div>
+        </section>
+
+        <!-- Screen: Action Plan Goals & Habits -->
+        <section id="screen-action-plan" class="app-screen">
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
+            
+            <!-- Left Panel: Target Config -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+              <div class="card">
+                <h2 class="section-title" style="margin-bottom: 16px;">Savings Target</h2>
+                <div class="form-group">
+                  <label class="form-label">Set monthly saving goal (₹)</label>
+                  <input type="number" id="action-savings-target" class="form-control" value="2500" min="0">
+                </div>
+                <div style="margin-top: 16px;">
+                  <span style="font-size: 0.8rem; color: var(--text-secondary);">Accumulated saving from completed habits:</span>
+                  <div id="action-achieved-savings" style="font-size: 1.5rem; font-weight: 700; color: var(--success); margin-top: 4px;">₹0 / month</div>
+                </div>
+              </div>
+
+              <div class="card">
+                <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">Budgeting Safety</h3>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">This tracker generates estimations based on historical UPI descriptions. Savings are target projections only. Check the Savings Simulator to test other options.</p>
+              </div>
+            </div>
+
+            <!-- Right Panel: Active Habit Checklist -->
+            <div class="card">
+              <h2 class="section-title" style="margin-bottom: 20px;"><i data-lucide="check-square"></i> Active Saving Habits Checklist</h2>
+              <div id="action-habits-list">
+                <!-- Dynamically generated list -->
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Screen: Savings Simulator -->
+        <section id="screen-simulator" class="app-screen">
+          <div class="card" style="margin-bottom: 24px;">
+            <h2 class="section-title" style="margin-bottom: 12px;"><i data-lucide="sliders"></i> Savings Simulator</h2>
+            <p style="font-size: 0.9rem; color: var(--text-secondary);">Test how adjusting specific discretionary behaviors affects your monthly wallet size. Drag sliders to configure target limits.</p>
+          </div>
+
+          <div class="simulator-container">
+            <!-- Sliders Panel -->
+            <div class="card simulator-controls">
+              <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 8px;">Adjust spending frequency</h3>
+              
+              <!-- Slider 1: Late Night deliveries -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Late-night Delivery Orders</span>
+                  <span id="sim-val-food" class="slider-val-box">2 / week</span>
+                </div>
+                <p class="slider-desc">Restrict food deliveries after 8 PM (average ₹200+ per order).</p>
+                <div class="slider-control-row">
+                  <span>0</span>
+                  <input type="range" id="sim-slider-food" class="custom-slider" min="0" max="8" value="2">
+                  <span>8</span>
+                </div>
+              </div>
+
+              <!-- Slider 2: Shopping limit -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Monthly Shopping Budget</span>
+                  <span id="sim-val-shop" class="slider-val-box">₹1,500</span>
+                </div>
+                <p class="slider-desc">Set a monthly cap on Amazon / Flipkart shopping purchases.</p>
+                <div class="slider-control-row">
+                  <span>₹0</span>
+                  <input type="range" id="sim-slider-shop" class="custom-slider" min="0" max="10000" step="250" value="1500">
+                  <span>₹10k</span>
+                </div>
+              </div>
+
+              <!-- Slider 3: Subscriptions count -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Active Subscriptions Count</span>
+                  <span id="sim-val-sub" class="slider-val-box">2 active</span>
+                </div>
+                <p class="slider-desc">Maintain active monthly memberships (cancellations save money).</p>
+                <div class="slider-control-row">
+                  <span>0</span>
+                  <input type="range" id="sim-slider-sub" class="custom-slider" min="0" max="6" value="2">
+                  <span>6</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Projection results Panel -->
+            <div class="simulator-results card">
+              <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">Estimated Monthly Savings</h3>
+              <div id="sim-total-saving" style="font-size: 3rem; font-weight: 800; color: var(--success); margin: 16px 0;">₹0/month</div>
+              <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 320px; margin-bottom: 24px;">Calculated dynamically relative to your average discretionary transaction history in the current month.</p>
+              <button id="sim-btn-add-plan" class="btn btn-primary">
+                <i data-lucide="plus-circle"></i> Add Simulation Habits to Action Plan
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Screen: AI Chat Coach -->
+        <section id="screen-chat" class="app-screen">
+          <div class="chat-container">
+            <!-- Messages Container -->
+            <div id="chat-msg-history" class="chat-history">
+              <!-- Populated dynamic bubble dialogs -->
+            </div>
+            
+            <!-- Quick Suggestions Pills -->
+            <div class="chat-suggestions-container">
+              <div class="chat-suggestion-pill">Why did my spending increase?</div>
+              <div class="chat-suggestion-pill">Where can I save ₹2,000?</div>
+              <div class="chat-suggestion-pill">What is my worst spending habit?</div>
+              <div class="chat-suggestion-pill">How much did I spend on Swiggy?</div>
+              <div class="chat-suggestion-pill">Show my weekend spending pattern.</div>
+              <div class="chat-suggestion-pill">Which subscriptions should I review?</div>
+            </div>
+
+            <!-- Input Box -->
+            <div class="chat-input-area">
+              <input type="text" id="chat-box-input" class="chat-input" placeholder="Ask details e.g., 'How much did I spend on Swiggy this month?'...">
+              <button id="chat-send-btn" class="btn btn-primary">
+                <i data-lucide="send"></i> Send
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Screen: CSV Data Importer -->
+        <section id="screen-import" class="app-screen">
+          <div class="card" style="margin-bottom: 24px;">
+            <h2 class="section-title" style="margin-bottom: 12px;"><i data-lucide="upload-cloud"></i> Import Transaction CSV</h2>
+            <p style="font-size: 0.9rem; color: var(--text-secondary);">Upload transaction sheets. We validate every row and allow flexible mapping for custom column headers.</p>
+          </div>
+
+          <!-- Drag and Drop Zone -->
+          <div id="csv-drop-zone" class="csv-drop-zone">
+            <i data-lucide="file-text" width="48" height="48"></i>
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;">Drag & Drop your CSV file here</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">Or click to browse from local directories</p>
+            <button class="btn btn-secondary">Choose File</button>
+            <input type="file" id="csv-file-input" style="display: none;" accept=".csv">
+          </div>
+
+          <!-- Column Header mapping configuration & validation logs -->
+          <div id="csv-mapping-wrapper" style="display: none;">
+            <div class="card" style="margin-bottom: 24px;">
+              <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 16px;">Map CSV columns to standard transaction fields</h3>
+              <div id="csv-mapping-selectors" class="csv-mapping-grid">
+                <!-- Dropdown selects mapping keys -->
+              </div>
+            </div>
+
+            <!-- Validation Counters -->
+            <div class="validation-metrics">
+              <div class="val-metric valid">
+                <div class="val-metric-num" id="csv-val-valid" style="color: var(--success);">0</div>
+                <div class="val-metric-label">Valid Rows to Import</div>
+              </div>
+              <div class="val-metric invalid">
+                <div class="val-metric-num" id="csv-val-invalid" style="color: var(--danger);">0</div>
+                <div class="val-metric-label">Invalid Rows (Skipped)</div>
+              </div>
+              <div class="val-metric duplicate">
+                <div class="val-metric-num" id="csv-val-duplicates" style="color: var(--warning);">0</div>
+                <div class="val-metric-label">Duplicate Matches (Skipped)</div>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+              <button class="btn btn-secondary" onclick="location.reload()">Reset CSV File</button>
+              <button id="btn-execute-import" class="btn btn-primary" disabled>Execute Transaction Import</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Screen: Settings -->
+        <section id="screen-settings" class="app-screen">
+          
+          <!-- User Profile Card -->
+          <div class="card" style="margin-bottom: 24px;">
+            <h2 class="section-title" style="margin-bottom: 16px;">
+              <i data-lucide="user"></i> Account Profile
+            </h2>
+            <div class="profile-overview-grid">
+              <div class="profile-avatar-large" id="settings-avatar-large">U</div>
+              <div class="profile-info-fields">
+                <div class="form-group" style="margin-bottom: 12px;">
+                  <label class="form-label">Full Name</label>
+                  <input type="text" id="settings-user-name" class="form-control" readonly style="background-color: var(--bg-tertiary);">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                  <label class="form-label">Email Address</label>
+                  <input type="email" id="settings-user-email" class="form-control" readonly style="background-color: var(--bg-tertiary);">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preferences Card -->
+          <div class="card" style="margin-bottom: 24px;">
+            <h2 class="section-title" style="margin-bottom: 16px;">
+              <i data-lucide="sliders"></i> Preferences & Data Management
+            </h2>
+            
+            <div class="form-group" style="max-width: 400px; margin-bottom: 24px;">
+              <label class="form-label">Primary Currency Symbol</label>
+              <input type="text" class="form-control" value="₹" readonly style="background-color: var(--bg-tertiary);">
+              <span style="font-size: 0.75rem; color: var(--text-muted);">INR (₹) default for transaction calculations.</span>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 24px; display: flex; flex-direction: column; gap: 16px;">
+              <h3 style="font-size: 1rem; font-weight: 700;">Data Sync & Demo Mode</h3>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); max-width: 500px;">Your transactions, active plans, goals, and coach conversations are securely isolated and linked only to your account.</p>
+              
+              <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px;">
+                <button id="settings-load-demo" class="btn btn-secondary">
+                  <i data-lucide="database"></i> Load Fictional Demo Data
+                </button>
+                <button id="settings-clear-data" class="btn btn-warning">
+                  <i data-lucide="rotate-ccw"></i> Reset Account Transactions
+                </button>
+              </div>
+
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 12px;">
+                Storage Status: <strong id="settings-tx-count" style="color: var(--text-primary);">0 transactions stored</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Danger Zone: Account Deletion -->
+          <div class="card danger-zone-card" style="margin-bottom: 24px; border: 1px solid var(--danger);">
+            <h2 class="section-title" style="color: var(--danger); margin-bottom: 12px;">
+              <i data-lucide="alert-octagon" style="color: var(--danger);"></i> Danger Zone
+            </h2>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+              Permanently delete your account and all associated transactions, habits, and chat history. This action is irreversible.
+            </p>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <button id="settings-btn-logout" class="btn btn-secondary">
+                <i data-lucide="log-out"></i> Logout
+              </button>
+              <button id="settings-btn-delete-account" class="btn btn-danger">
+                <i data-lucide="trash-2"></i> Delete Account Permanently
+              </button>
+            </div>
+          </div>
+
+          <!-- Privacy Policy notice block -->
+          <div class="card" style="border-left: 4px solid var(--success);">
+            <h3 style="font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+              <i data-lucide="shield-check" style="color: var(--success);"></i> Multi-Tenant Privacy Shield
+            </h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">Every financial transaction is strictly isolated at the database level. No other user can access your data, guaranteeing complete confidentiality for your personal budget.</p>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Mobile Nav Bar (Bottom Navigation) -->
+    <nav class="mobile-bottom-nav">
+      <div class="mobile-nav-item active" data-screen="screen-dashboard">
+        <i data-lucide="layout-dashboard" width="18" height="18"></i>
+        <span>Dashboard</span>
+      </div>
+      <div class="mobile-nav-item" data-screen="screen-transactions">
+        <i data-lucide="list-collapse" width="18" height="18"></i>
+        <span>Tx List</span>
+      </div>
+      <div class="mobile-nav-item" data-screen="screen-insights">
+        <i data-lucide="alert-triangle" width="18" height="18"></i>
+        <span>Insights</span>
+      </div>
+      <div class="mobile-nav-item" data-screen="screen-chat">
+        <i data-lucide="message-square" width="18" height="18"></i>
+        <span>AI Chat</span>
+      </div>
+      <div class="mobile-nav-item" data-screen="screen-settings">
+        <i data-lucide="settings" width="18" height="18"></i>
+        <span>Setup</span>
+      </div>
+    </nav>
+
+  </div>
+
+  <!-- ==========================================
+       AUTHENTICATION MODALS (LOGIN & SIGN UP)
+       ========================================== -->
+
+  <!-- Modal: Login -->
+  <div id="modal-login" class="modal-overlay">
+    <div class="modal-content auth-modal-content">
+      <button type="button" class="icon-btn auth-modal-close close-modal" aria-label="Close">
+        <i data-lucide="x"></i>
+      </button>
+
+      <div class="auth-split-container">
+        <!-- Left Hero Preview -->
+        <div class="auth-hero-panel">
+          <div class="logo" style="margin-bottom: 20px;">
+            <i data-lucide="brain-circuit"></i>
+            <span>Where Did My Money Go?</span>
+          </div>
+          <h2 class="auth-hero-title">Don't just track your money.<br>Understand it.</h2>
+          <p class="auth-hero-desc">Discover the psychological triggers and daily patterns behind your spending.</p>
+
+          <div class="auth-preview-cards">
+            <div class="auth-preview-chip">
+              <span class="preview-emoji">🍔</span>
+              <div>
+                <strong>Food orders increased 32%</strong>
+                <div class="preview-sub">₹1,450 spent after 8 PM</div>
+              </div>
+            </div>
+            <div class="auth-preview-chip">
+              <span class="preview-emoji">💡</span>
+              <div>
+                <strong>Potential monthly saving</strong>
+                <div class="preview-sub" style="color: var(--success); font-weight: 700;">₹1,100 / month</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Form Panel -->
+        <div class="auth-form-panel">
+          <div class="auth-form-header">
+            <h2 class="auth-title">Welcome Back</h2>
+            <p class="auth-subtitle">Sign in to continue understanding your spending.</p>
+          </div>
+
+          <!-- Error Alert Container -->
+          <div id="login-error-alert" class="auth-alert danger" style="display: none;"></div>
+
+          <form id="form-login" novalidate>
+            <div class="form-group">
+              <label class="form-label" for="login-email">Email</label>
+              <div class="input-with-icon">
+                <i data-lucide="mail"></i>
+                <input type="email" id="login-email" class="form-control" placeholder="Enter your email" required autocomplete="email">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label class="form-label" for="login-password" style="margin-bottom: 0;">Password</label>
+                <a href="#" id="link-forgot-password" class="auth-link-sm">Forgot password?</a>
+              </div>
+              <div class="input-with-icon" style="margin-top: 6px;">
+                <i data-lucide="lock"></i>
+                <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required autocomplete="current-password">
+                <button type="button" class="btn-toggle-password" id="btn-toggle-login-pass" aria-label="Toggle password visibility">
+                  <i data-lucide="eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" id="btn-submit-login" class="btn btn-primary btn-block btn-lg" style="margin-top: 8px;">
+              <span>Login</span>
+            </button>
+          </form>
+
+          <div class="auth-switch-prompt">
+            Don't have an account? <a href="#" id="link-switch-to-signup" class="auth-highlight-link">Create Account</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Sign Up -->
+  <div id="modal-signup" class="modal-overlay">
+    <div class="modal-content auth-modal-content">
+      <button type="button" class="icon-btn auth-modal-close close-modal" aria-label="Close">
+        <i data-lucide="x"></i>
+      </button>
+
+      <div class="auth-split-container">
+        <!-- Left Hero Panel -->
+        <div class="auth-hero-panel">
+          <div class="logo" style="margin-bottom: 20px;">
+            <i data-lucide="brain-circuit"></i>
+            <span>Where Did My Money Go?</span>
+          </div>
+          <h2 class="auth-hero-title">Start understanding where your money goes.</h2>
+          <p class="auth-hero-desc">Create your private financial environment in seconds. 100% data isolation guaranteed.</p>
+
+          <div class="auth-perks-list">
+            <div class="auth-perk-item">
+              <i data-lucide="check" style="color: var(--success);"></i>
+              <span>Automated behavioral leak detection</span>
+            </div>
+            <div class="auth-perk-item">
+              <i data-lucide="check" style="color: var(--success);"></i>
+              <span>Interactive savings simulator</span>
+            </div>
+            <div class="auth-perk-item">
+              <i data-lucide="check" style="color: var(--success);"></i>
+              <span>Private, dedicated financial coach</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Form Panel -->
+        <div class="auth-form-panel">
+          <div class="auth-form-header">
+            <h2 class="auth-title">Create Your Account</h2>
+            <p class="auth-subtitle">Start understanding where your money goes.</p>
+          </div>
+
+          <!-- Error Alert Container -->
+          <div id="signup-error-alert" class="auth-alert danger" style="display: none;"></div>
+
+          <form id="form-signup" novalidate>
+            <div class="form-group">
+              <label class="form-label" for="signup-name">Full Name</label>
+              <div class="input-with-icon">
+                <i data-lucide="user"></i>
+                <input type="text" id="signup-name" class="form-control" placeholder="e.g. Parthiv" required autocomplete="name">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="signup-email">Email</label>
+              <div class="input-with-icon">
+                <i data-lucide="mail"></i>
+                <input type="email" id="signup-email" class="form-control" placeholder="Enter your email" required autocomplete="email">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="signup-password">Password</label>
+              <div class="input-with-icon">
+                <i data-lucide="lock"></i>
+                <input type="password" id="signup-password" class="form-control" placeholder="At least 8 characters" required autocomplete="new-password">
+                <button type="button" class="btn-toggle-password" id="btn-toggle-signup-pass" aria-label="Toggle password visibility">
+                  <i data-lucide="eye"></i>
+                </button>
+              </div>
+              <div class="password-hint">Must be 8+ characters with a mix of letters and numbers/symbols.</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="signup-confirm-password">Confirm Password</label>
+              <div class="input-with-icon">
+                <i data-lucide="lock"></i>
+                <input type="password" id="signup-confirm-password" class="form-control" placeholder="Re-enter your password" required autocomplete="new-password">
+              </div>
+            </div>
+
+            <button type="submit" id="btn-submit-signup" class="btn btn-primary btn-block btn-lg" style="margin-top: 8px;">
+              <span>Create Account</span>
+            </button>
+          </form>
+
+          <div class="auth-switch-prompt">
+            Already have an account? <a href="#" id="link-switch-to-login" class="auth-highlight-link">Login</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Forgot Password Assistance -->
+  <div id="modal-forgot-password" class="modal-overlay">
+    <div class="modal-content" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Password Recovery</h3>
+        <button type="button" class="icon-btn close-modal" aria-label="Close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="text-align: center; margin-bottom: 16px;">
+          <div style="width: 48px; height: 48px; background: rgba(59, 130, 246, 0.15); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: var(--accent); margin-bottom: 8px;">
+            <i data-lucide="key-round"></i>
+          </div>
+          <h4 style="font-weight: 700; margin-bottom: 6px;">Forgot Your Password?</h4>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
+            To ensure complete privacy and security, password resets require active transactional email infrastructure. In this local installation, you can easily register a new account or contact your local system administrator.
+          </p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary btn-block btn-cancel-modal">Back to Sign In</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Confirm Delete Account -->
+  <div id="modal-confirm-delete-account" class="modal-overlay">
+    <div class="modal-content" style="max-width: 460px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: var(--danger); display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="alert-triangle" style="color: var(--danger);"></i> Delete Account Permanently
+        </h3>
+        <button type="button" class="icon-btn close-modal" aria-label="Close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.95rem; color: var(--text-primary); margin-bottom: 12px; font-weight: 600;">
+          Are you sure you want to delete your account?
+        </p>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;">
+          This will permanently delete all your financial transactions, behavioral analysis, action plans, savings goals, and chat history. <strong>This action cannot be undone.</strong>
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-cancel-modal">Cancel</button>
+        <button type="button" id="btn-confirm-delete-account" class="btn btn-danger">Yes, Delete Everything</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       TRANSACTION MODALS
+       ========================================== -->
+  
+  <!-- Modal: Add / Edit Transaction -->
+  <div id="modal-add-transaction" class="modal-overlay">
+    <div class="modal-content">
+      <form id="form-transaction">
+        <div class="modal-header">
+          <h3 class="modal-title" id="modal-tx-title">Add Transaction</h3>
+          <button type="button" class="icon-btn close-modal" style="padding: 2px;">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="form-tx-id">
+          
+          <div class="form-group">
+            <label class="form-label" for="form-tx-merchant">Merchant / Description *</label>
+            <input type="text" id="form-tx-merchant" class="form-control" placeholder="e.g. Swiggy, Uber, Rent Payment" required>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="form-tx-amount">Amount (₹) *</label>
+              <input type="number" id="form-tx-amount" class="form-control" step="0.01" min="0.01" placeholder="0.00" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="form-tx-category">Category</label>
+              <select id="form-tx-category" class="form-control">
+                <option value="Food">Food</option>
+                <option value="Groceries">Groceries</option>
+                <option value="Transportation">Transportation</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Bills">Bills</option>
+                <option value="Subscriptions">Subscriptions</option>
+                <option value="Education">Education</option>
+                <option value="Healthcare">Healthcare</option>
+                <option value="Travel">Travel</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="form-tx-date">Date *</label>
+              <input type="date" id="form-tx-date" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="form-tx-time">Time</label>
+              <input type="time" id="form-tx-time" class="form-control">
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="form-tx-type">Transaction Type</label>
+              <select id="form-tx-type" class="form-control">
+                <option value="expense">Expense</option>
+                <option value="income">Income</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="form-tx-payment">Payment Method</label>
+              <select id="form-tx-payment" class="form-control">
+                <option value="UPI">UPI</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Debit Card">Debit Card</option>
+                <option value="Net Banking">Net Banking</option>
+                <option value="Cash">Cash</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" for="form-tx-notes">Optional Notes</label>
+            <textarea id="form-tx-notes" class="form-control" rows="2" placeholder="Add additional details..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-cancel-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Confirm Delete Transaction -->
+  <div id="modal-confirm-delete" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Delete Transaction</h3>
+        <button type="button" class="icon-btn close-modal" style="padding: 2px;">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.95rem; color: var(--text-secondary);">Are you sure you want to delete this transaction from your records? This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-cancel-modal">Cancel</button>
+        <button type="button" id="btn-confirm-delete" class="btn btn-danger">Delete Transaction</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       APPLICATION JS SCRIPT MODULES
+       ========================================== -->
+  <script src="js/auth.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/analytics.js"></script>
+  <script src="js/ai-engine.js"></script>
+  <script src="js/csv-importer.js"></script>
+  <script src="js/demo-data.js"></script>
+  <script src="js/ui-render.js"></script>
+
+  <!-- Application Bootstrap -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // Start UI render module
+      window.AppUIRender.init();
+      
+      // Auto-render SVG vector icons via CDN
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+
+      // Hook up dynamic page title updates
+      window.AppState.subscribe(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+        
+        const screenTitles = {
+          "screen-dashboard": "Dashboard Overview",
+          "screen-transactions": "Transactions List",
+          "screen-where-did-it-go": "Where Did My Money Go?",
+          "screen-insights": "AI Behavior Insights",
+          "screen-action-plan": "Savings Action Plan",
+          "screen-simulator": "Savings Simulator",
+          "screen-chat": "Ask AI Financial Coach",
+          "screen-import": "Import Transaction Sheets",
+          "screen-settings": "Settings & Data Sync"
+        };
+        const titleEl = document.getElementById("desktop-page-title");
+        if (titleEl) {
+          titleEl.textContent = screenTitles[window.AppUIRender.activeScreen] || "WDMMG? App";
+        }
+      });
+    });
+  </script>
+</body>
+</html>
