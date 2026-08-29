@@ -29,10 +29,30 @@ An AI-powered personal finance analysis platform that spots hidden spending patt
 
 ---
 
-## 🚀 Quick Start
+## 🚀 1-Click & Cloud Deployment
 
-### Prerequisites
-- [Node.js](https://nodejs.org/) (v18+)
+### Option 1: Render.com (Recommended — 100% Free with Persistent Storage)
+1. Go to [dashboard.render.com](https://dashboard.render.com/) and click **New +** -> **Blueprint** or **Web Service**.
+2. Select your repository: `https://github.com/parthivlella-ai/AI-AGENT`.
+3. Render will automatically read [`render.yaml`](file:///c:/Users/parth/OneDrive/Desktop/agent%20W/render.yaml), install dependencies, attach persistent SQLite storage, and deploy your live URL in under 2 minutes!
+
+### Option 2: Railway.app
+1. Go to [railway.app](https://railway.app/) -> **New Project** -> **Deploy from GitHub Repo**.
+2. Select `parthivlella-ai/AI-AGENT`.
+3. Click **Deploy Now**.
+
+### Option 3: Docker / Self-Hosted VPS / Cloud Run / Fly.io
+```bash
+# Build Docker image
+docker build -t where-did-my-money-go .
+
+# Run container with mounted storage volume
+docker run -d -p 8080:8080 -v $(pwd)/data:/app/data --name wdmmg where-did-my-money-go
+```
+
+---
+
+## 💻 Local Development
 
 ### Installation
 
@@ -47,17 +67,12 @@ An AI-powered personal finance analysis platform that spots hidden spending patt
    npm install
    ```
 
-3. Copy environment configuration:
-   ```bash
-   cp .env.example .env
-   ```
-
-4. Start the server:
+3. Start the server:
    ```bash
    npm start
    ```
 
-5. Open your browser at:
+4. Open your browser at:
    ```text
    http://localhost:8080
    ```
