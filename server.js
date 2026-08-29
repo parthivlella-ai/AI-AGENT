@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const os = require('os');
 const { DatabaseSync } = require('node:sqlite');
 require('dotenv').config();
 
@@ -13,18 +14,27 @@ const PORT = process.env.PORT || 8080;
 const JWT_SECRET = process.env.SESSION_SECRET || 'wdmmg_secure_jwt_secret_key_2026';
 const COOKIE_NAME = 'wdmmg_session';
 
-// Ensure data directory exists
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+// Ensure data directory exists (support writable /tmp in serverless/Vercel)
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
+const dataDir = isServerless ? os.tmpdir() : path.join(__dirname, 'data');
+if (!isServerless && !fs.existsSync(dataDir)) {
+  try {
+    fs.mkdirSync(dataDir, { recursive: true });
+  } catch (err) {
+    console.warn('Could not create data directory, using temp:', err.message);
+  }
 }
 
 // Initialize SQLite Database
 const dbPath = path.join(dataDir, 'money_tracker.db');
 const db = new DatabaseSync(dbPath);
 
-// Enable WAL mode & foreign keys
-db.exec('PRAGMA journal_mode = WAL;');
+// Enable WAL mode & foreign keys (safely fallback if journal mode not supported)
+try {
+  db.exec('PRAGMA journal_mode = WAL;');
+} catch (e) {
+  // Ignore in environments where WAL is restricted
+}
 db.exec('PRAGMA foreign_keys = ON;');
 
 // Initialize Tables
@@ -857,7 +867,11 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'An unexpected internal error occurred.' });
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`WDMMG Server running on http://localhost:${PORT}`);
-});
+// Start Server (only when run directly via `node server.js`, not when imported by Vercel / serverless functions)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`WDMMG Server running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
