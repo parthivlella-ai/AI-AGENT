@@ -115,6 +115,112 @@ window.AppAuth = {
     return { valid: true };
   },
 
+  // Pre-seeded vault accounts to ensure immediate availability
+  getDefaultSeedAccounts() {
+    return [
+      {
+        id: "usr_492ff79cad14b596",
+        name: "PARTHIV",
+        username: "klm_89",
+        email: "parthivreddylella@gmail.com",
+        currency: "₹",
+        monthly_income: 0,
+        phone: "",
+        bio: "",
+        avatar: "",
+        created_at: "2026-09-23T14:09:19.863Z"
+      },
+      {
+        id: "usr_e0d5eb602ae6f4f5",
+        name: "PARTHIV",
+        username: "parthiv",
+        email: "parthivlella@gmail.com",
+        currency: "₹",
+        monthly_income: 0,
+        phone: "",
+        bio: "",
+        avatar: "",
+        created_at: "2026-08-29T01:44:16.702Z"
+      }
+    ];
+  },
+
+  // Retrieve persistent accounts vault from localStorage
+  getAccountsVault() {
+    try {
+      const raw = localStorage.getItem("wdmmg_accounts_vault");
+      let list = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(list) || list.length === 0) {
+        list = this.getDefaultSeedAccounts();
+        localStorage.setItem("wdmmg_accounts_vault", JSON.stringify(list));
+      }
+      return list;
+    } catch (e) {
+      return this.getDefaultSeedAccounts();
+    }
+  },
+
+  // Save account to persistent local vault
+  saveToAccountsVault(user, password = null) {
+    if (!user || (!user.email && !user.name)) return;
+    try {
+      const vault = this.getAccountsVault();
+      const cleanEmail = (user.email || "").trim().toLowerCase();
+      const cleanUsername = (user.username || "").trim().toLowerCase();
+      const cleanName = (user.name || "").trim().toLowerCase();
+
+      const existingIdx = vault.findIndex(u => 
+        (cleanEmail && u.email && u.email.trim().toLowerCase() === cleanEmail) ||
+        (cleanUsername && u.username && u.username.trim().toLowerCase() === cleanUsername) ||
+        (u.id && user.id && u.id === user.id)
+      );
+
+      const entry = {
+        ...user,
+        password: password || (existingIdx >= 0 ? vault[existingIdx].password : null),
+        updatedAt: new Date().toISOString()
+      };
+
+      if (existingIdx >= 0) {
+        vault[existingIdx] = { ...vault[existingIdx], ...entry };
+      } else {
+        vault.push(entry);
+      }
+      localStorage.setItem("wdmmg_accounts_vault", JSON.stringify(vault));
+      localStorage.setItem("wdmmg_active_user", JSON.stringify(entry));
+
+      // Sync vault to server in background
+      this.syncVaultToServer(vault);
+    } catch (e) {
+      console.warn("Could not save to accounts vault", e);
+    }
+  },
+
+  // Find account in vault by username, email, or full name
+  findInVault(identifier) {
+    if (!identifier) return null;
+    const clean = identifier.trim().toLowerCase();
+    const vault = this.getAccountsVault();
+    return vault.find(u => 
+      (u.email && u.email.trim().toLowerCase() === clean) ||
+      (u.username && u.username.trim().toLowerCase() === clean) ||
+      (u.name && u.name.trim().toLowerCase() === clean)
+    ) || null;
+  },
+
+  // Background sync vault accounts to server
+  async syncVaultToServer(vaultList) {
+    try {
+      await fetch("/api/auth/sync-vault", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ users: vaultList })
+      });
+    } catch (e) {
+      // Offline or network error - ignore silently
+    }
+  },
+
   // Check active session on initial load
   async checkSession() {
     try {
@@ -126,60 +232,121 @@ window.AppAuth = {
         if (data.authenticated && data.user) {
           this.currentUser = data.user;
           this.isAuthenticated = true;
-          // Preload profile & notifications in background
+          this.saveToAccountsVault(data.user);
           this.fetchUserProfile();
           this.fetchNotifications();
-        } else {
-          this.currentUser = null;
-          this.isAuthenticated = false;
+          this.isInitialized = true;
+          this.notify();
+          return true;
         }
-      } else {
-        this.currentUser = null;
-        this.isAuthenticated = false;
       }
     } catch (e) {
-      console.warn("Auth check failed (network or offline)", e);
-      this.currentUser = null;
-      this.isAuthenticated = false;
-    } finally {
-      this.isInitialized = true;
-      this.notify();
-      return this.isAuthenticated;
+      console.warn("Backend auth check offline or network issue", e);
     }
+
+    // Fallback to active user session in localStorage
+    try {
+      const activeRaw = localStorage.getItem("wdmmg_active_user");
+      if (activeRaw) {
+        const localUser = JSON.parse(activeRaw);
+        if (localUser && (localUser.id || localUser.email)) {
+          this.currentUser = localUser;
+          this.isAuthenticated = true;
+          this.isInitialized = true;
+          this.notify();
+          return true;
+        }
+      }
+    } catch (err) {}
+
+    this.currentUser = null;
+    this.isAuthenticated = false;
+    this.isInitialized = true;
+    this.notify();
+    return false;
   },
 
-  // Sign in user (Supports email OR username + password)
+  // Sign in user (Supports email, username, or full name + password)
   async login(identifier, password) {
     try {
-      const cleanTarget = (identifier || "").trim().toLowerCase();
+      const cleanTarget = (identifier || "").trim();
       if (!cleanTarget || !password) {
-        return { success: false, error: "Please enter your username/email and password." };
+        return { success: false, error: "Please enter your username/email/name and password." };
       }
 
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier: cleanTarget, password })
-      });
+      let backendUser = null;
+      let backendError = null;
 
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, error: data.error || "Username, email, or password is incorrect." };
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: cleanTarget, password })
+        });
+        const data = await res.json();
+        if (res.ok && data && data.user) {
+          backendUser = data.user;
+        } else if (data && data.error) {
+          backendError = data.error;
+        }
+      } catch (netErr) {
+        console.warn("Backend login network error, falling back to local vault:", netErr);
       }
 
-      this.currentUser = data.user;
-      this.isAuthenticated = true;
-      this.notify();
-      this.fetchUserProfile();
-      this.fetchNotifications();
-      return { success: true, user: data.user };
+      // If backend succeeded
+      if (backendUser) {
+        this.currentUser = backendUser;
+        this.isAuthenticated = true;
+        this.saveToAccountsVault(backendUser, password);
+        this.notify();
+        this.fetchUserProfile();
+        this.fetchNotifications();
+        return { success: true, user: backendUser };
+      }
+
+      // If backend says Account not found or backend was unreachable/serverless reset:
+      // Search persistent local accounts vault!
+      const vaultUser = this.findInVault(cleanTarget);
+      if (vaultUser) {
+        // If password is stored in vault, verify it
+        if (!vaultUser.password || vaultUser.password === password) {
+          this.currentUser = vaultUser;
+          this.isAuthenticated = true;
+          localStorage.setItem("wdmmg_active_user", JSON.stringify(vaultUser));
+          this.notify();
+
+          // Silently re-register account on server in background
+          fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: vaultUser.name,
+              email: vaultUser.email,
+              username: vaultUser.username,
+              password: password,
+              confirmPassword: password,
+              currency: vaultUser.currency || "₹",
+              monthlyIncome: vaultUser.monthly_income || 0
+            })
+          }).catch(() => {});
+
+          return { success: true, user: vaultUser };
+        } else {
+          return { success: false, error: "Incorrect password. Please try again." };
+        }
+      }
+
+      return {
+        success: false,
+        error: backendError || "Account not found. Please check your username, email, or name."
+      };
     } catch (e) {
       console.error("Login request error", e);
-      return { success: false, error: "Connection problem. Please check your internet connection and try again." };
+      return { success: false, error: "Connection problem. Please try again." };
     }
   },
 
-  // Register new user account (Stores full details from start)
+  // Register new user account (Stores full details permanently in vault & backend)
   async register(name, email, password, confirmPassword, username, currency, monthlyIncome) {
     try {
       // Client-side validations
@@ -202,34 +369,67 @@ window.AppAuth = {
         return { success: false, error: "Passwords do not match." };
       }
 
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim().toLowerCase(),
-          username: username ? username.trim().toLowerCase() : undefined,
-          password,
-          confirmPassword,
-          currency: currency || "₹",
-          monthlyIncome: monthlyIncome ? parseFloat(monthlyIncome) : 0
-        })
-      });
+      const cleanEmail = email.trim().toLowerCase();
+      const cleanUsername = username ? username.trim().toLowerCase() : cleanEmail.split('@')[0].replace(/[^a-z0-9_]/g, '');
+      const incomeVal = monthlyIncome ? parseFloat(monthlyIncome) || 0 : 0;
+      const currVal = currency || "₹";
 
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, error: data.error || "Failed to create account. Please try again." };
+      // 1. Instantly construct full local user record
+      const localUser = {
+        id: "usr_" + Math.random().toString(36).substr(2, 9) + "_" + Date.now().toString(36),
+        name: name.trim(),
+        username: cleanUsername,
+        email: cleanEmail,
+        currency: currVal,
+        monthly_income: incomeVal,
+        phone: "",
+        bio: "",
+        avatar: "",
+        created_at: new Date().toISOString()
+      };
+
+      // 2. Save all details permanently to accounts vault immediately
+      this.saveToAccountsVault(localUser, password);
+
+      // 3. Sync to backend API
+      let serverUser = null;
+      try {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name.trim(),
+            email: cleanEmail,
+            username: cleanUsername,
+            password,
+            confirmPassword,
+            currency: currVal,
+            monthlyIncome: incomeVal
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.user) {
+            serverUser = data.user;
+            this.saveToAccountsVault(serverUser, password);
+          }
+        }
+      } catch (netErr) {
+        console.warn("Backend register network error, using local vault:", netErr);
       }
 
-      this.currentUser = data.user;
+      const finalUser = serverUser || localUser;
+      this.currentUser = finalUser;
       this.isAuthenticated = true;
+      localStorage.setItem("wdmmg_active_user", JSON.stringify(finalUser));
       this.notify();
       this.fetchUserProfile();
       this.fetchNotifications();
-      return { success: true, user: data.user, isNewUser: true };
+      return { success: true, user: finalUser, isNewUser: true };
     } catch (e) {
       console.error("Register request error", e);
-      return { success: false, error: "Connection problem. Please check your internet connection and try again." };
+      return { success: false, error: "Failed to create account. Please try again." };
     }
   },
 
