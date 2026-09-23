@@ -233,6 +233,36 @@ window.AppAuth = {
     }
   },
 
+  // Reset user password (by username, email, or full name)
+  async resetPassword(identifier, newPassword, confirmPassword) {
+    try {
+      const cleanTarget = (identifier || "").trim();
+      if (!cleanTarget) {
+        return { success: false, error: "Please enter your username, email, or name." };
+      }
+      const passVal = this.validatePassword(newPassword);
+      if (!passVal.valid) return { success: false, error: passVal.message };
+      if (newPassword !== confirmPassword) {
+        return { success: false, error: "Passwords do not match." };
+      }
+
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: cleanTarget, newPassword, confirmPassword })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.error || "Failed to reset password." };
+      }
+      return { success: true, message: data.message, identifier: data.identifier };
+    } catch (e) {
+      console.error("Reset password request error", e);
+      return { success: false, error: "Connection error. Please try again." };
+    }
+  },
+
   // Fetch complete user profile & account stats
   async fetchUserProfile() {
     if (!this.isAuthenticated) return null;

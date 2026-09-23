@@ -438,23 +438,34 @@ app.post('/api/auth/register', authRateLimiter, async (req, res) => {
   }
 });
 
-// Login (Supports login via either Username or Email + Password)
+// Login (Supports login via Username, Email, or Full Name + Password)
 app.post('/api/auth/login', authRateLimiter, async (req, res) => {
   try {
     const { email, identifier, password } = req.body;
-    const loginTarget = (identifier || email || '').trim().toLowerCase();
+    const loginTarget = (identifier || email || '').trim();
 
     if (!loginTarget || !password) {
       return res.status(400).json({ error: 'Please enter your username/email and password.' });
     }
 
-    // Match by email OR username
+    const cleanTarget = loginTarget.toLowerCase();
+
+    // Match by email, username, or name (case-insensitive and trimmed)
     const userStmt = db.prepare(`
       SELECT id, username, name, email, password_hash, phone, bio, avatar, monthly_income, last_login_at, login_count, created_at 
       FROM users 
-      WHERE email = ? OR username = ?
+      WHERE LOWER(TRIM(email)) = ? 
+         OR LOWER(TRIM(username)) = ? 
+         OR LOWER(TRIM(name)) = ?
+      ORDER BY 
+        CASE 
+          WHEN LOWER(TRIM(email)) = ? THEN 1
+          WHEN LOWER(TRIM(username)) = ? THEN 2
+          ELSE 3
+        END
+      LIMIT 1
     `);
-    const user = userStmt.get(loginTarget, loginTarget);
+    const user = userStmt.get(cleanTarget, cleanTarget, cleanTarget, cleanTarget, cleanTarget);
 
     if (!user) {
       return res.status(401).json({ error: 'Account not found. Please check your username/email.' });
@@ -507,6 +518,70 @@ app.post('/api/auth/login', authRateLimiter, async (req, res) => {
   } catch (err) {
     console.error('Login error:', err.message);
     return res.status(500).json({ error: 'Unable to sign you in right now. Please try again.' });
+  }
+});
+
+// Password Reset Route (Allows easy recovery by username, email, or full name)
+app.post('/api/auth/reset-password', authRateLimiter, async (req, res) => {
+  try {
+    const { identifier, newPassword, confirmPassword } = req.body;
+    const target = (identifier || '').trim();
+
+    if (!target) {
+      return res.status(400).json({ error: 'Please enter your username, email, or full name.' });
+    }
+
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters long.' });
+    }
+
+    const hasLetter = /[a-zA-Z]/.test(newPassword);
+    const hasNumberOrSpecial = /[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(newPassword);
+    if (!hasLetter || !hasNumberOrSpecial) {
+      return res.status(400).json({ error: 'Password must contain a mix of letters and numbers or symbols.' });
+    }
+
+    if (confirmPassword && newPassword !== confirmPassword) {
+      return res.status(400).json({ error: 'Passwords do not match.' });
+    }
+
+    const cleanTarget = target.toLowerCase();
+    const userStmt = db.prepare(`
+      SELECT id, username, name, email FROM users 
+      WHERE LOWER(TRIM(email)) = ? 
+         OR LOWER(TRIM(username)) = ? 
+         OR LOWER(TRIM(name)) = ?
+      ORDER BY 
+        CASE 
+          WHEN LOWER(TRIM(email)) = ? THEN 1
+          WHEN LOWER(TRIM(username)) = ? THEN 2
+          ELSE 3
+        END
+      LIMIT 1
+    `);
+    const user = userStmt.get(cleanTarget, cleanTarget, cleanTarget, cleanTarget, cleanTarget);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Account not found. Please check your username or email.' });
+    }
+
+    const saltRounds = 10;
+    const newHash = await bcrypt.hash(newPassword, saltRounds);
+    const now = new Date().toISOString();
+
+    db.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?').run(newHash, now, user.id);
+
+    logUserActivity(user.id, 'PASSWORD_RESET', 'Password was successfully reset', null, req);
+    createNotification(user.id, 'Password Changed', 'Your account password was successfully updated.', 'security');
+
+    return res.json({
+      success: true,
+      message: 'Password reset successfully! You can now sign in with your new password.',
+      identifier: user.username || user.email
+    });
+  } catch (err) {
+    console.error('Password reset error:', err.message);
+    return res.status(500).json({ error: 'Failed to reset password. Please try again.' });
   }
 });
 

@@ -300,8 +300,8 @@ window.DemoData = {
       }
     ];
 
-    // If user is authenticated, sync to backend
-    if (window.AppAuth && window.AppAuth.isAuthenticated) {
+    // If user is authenticated with a real backend account, sync to backend
+    if (window.AppAuth && window.AppAuth.isAuthenticated && window.AppAuth.currentUser && window.AppAuth.currentUser.id !== "guest_demo") {
       window.AppState.loadDemoTransactions(transactions).then(() => {
         // Add default demo habits to DB
         window.AppState.addHabitGoal(window.AppState.savingGoals.habits[0]);

@@ -494,7 +494,13 @@ window.AppUIRender = {
 
         if (!result.success) {
           if (alertEl) {
-            alertEl.textContent = result.error || "Username, email, or password is incorrect.";
+            if (result.error && result.error.toLowerCase().includes("account not found")) {
+              alertEl.innerHTML = `Account not found. Don't have an account yet? <a href="#" id="alert-link-create-account" style="color: var(--accent); font-weight: 700; text-decoration: underline; margin-left: 4px;">Create Account</a>`;
+              const linkToCreate = document.getElementById("alert-link-create-account");
+              if (linkToCreate) linkToCreate.addEventListener("click", (e) => { e.preventDefault(); openSignup(); });
+            } else {
+              alertEl.textContent = result.error || "Username, email, or password is incorrect.";
+            }
             alertEl.style.display = "block";
           }
           return;
@@ -643,24 +649,83 @@ window.AppUIRender = {
       });
     }
 
+    // Password Reset Form Submit
+    const formReset = document.getElementById("form-reset-password");
+    if (formReset) {
+      formReset.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const identifier = document.getElementById("reset-identifier").value;
+        const newPassword = document.getElementById("reset-password").value;
+        const confirmPassword = document.getElementById("reset-confirm-password").value;
+        const errEl = document.getElementById("reset-error-alert");
+        const succEl = document.getElementById("reset-success-alert");
+        const submitBtn = document.getElementById("btn-submit-reset-pass");
+
+        if (errEl) errEl.style.display = "none";
+        if (succEl) succEl.style.display = "none";
+        if (submitBtn) submitBtn.disabled = true;
+
+        const result = await window.AppAuth.resetPassword(identifier, newPassword, confirmPassword);
+        if (submitBtn) submitBtn.disabled = false;
+
+        if (!result.success) {
+          if (errEl) {
+            errEl.textContent = result.error || "Failed to reset password.";
+            errEl.style.display = "block";
+          }
+          return;
+        }
+
+        if (succEl) {
+          succEl.textContent = result.message || "Password reset successfully!";
+          succEl.style.display = "block";
+        }
+
+        setTimeout(() => {
+          if (modalForgot) modalForgot.classList.remove("open");
+          formReset.reset();
+          if (succEl) succEl.style.display = "none";
+          openLogin();
+          const loginEmail = document.getElementById("login-email");
+          const loginPass = document.getElementById("login-password");
+          if (loginEmail && result.identifier) loginEmail.value = result.identifier;
+          if (loginPass) loginPass.focus();
+          this.showToast("Password updated! Sign in with your new password.", "success");
+        }, 1200);
+      });
+    }
+
     // Demo Data Actions (Instant 1-Click Access)
     const handleDemoLoad = async () => {
-      if (!window.AppAuth || !window.AppAuth.isAuthenticated) {
-        window.AppAuth.currentUser = {
-          id: "guest_demo",
-          name: "Demo Explorer",
-          email: "demo@moneytracker.app",
-          username: "demo_explorer",
-          currency: "₹"
-        };
-        window.AppAuth.isAuthenticated = true;
+      try {
+        if (!window.AppAuth || !window.AppAuth.isAuthenticated) {
+          window.AppAuth.currentUser = {
+            id: "guest_demo",
+            name: "Demo Explorer",
+            email: "demo@moneytracker.app",
+            username: "demo_explorer",
+            currency: "₹"
+          };
+          window.AppAuth.isAuthenticated = true;
+        }
+        window.DemoData.loadDemoData();
+        this.updateUserProfileDisplays();
+        this.showLandingPage(false);
+        this.switchScreen("screen-dashboard");
+        this.renderActiveScreen(window.AppState);
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
+        this.showToast("⚡ Live Demo mode loaded! Explore features freely.", "success");
+      } catch (err) {
+        console.error("Demo load error:", err);
+        this.showToast("Error loading demo data: " + err.message, "danger");
       }
-      window.DemoData.loadDemoData();
-      this.updateUserProfileDisplays();
-      this.showLandingPage(false);
-      this.switchScreen("screen-dashboard");
-      this.showToast("⚡ Live Demo mode loaded! Explore features freely.", "success");
     };
+
+    const btnLandingDemo = document.getElementById("onboarding-load-demo");
+    const btnDashDemo = document.getElementById("dash-load-demo-btn");
+    const btnSettingsDemo = document.getElementById("settings-load-demo");
 
     if (btnLandingDemo) btnLandingDemo.addEventListener("click", handleDemoLoad);
     if (btnDashDemo) btnDashDemo.addEventListener("click", handleDemoLoad);

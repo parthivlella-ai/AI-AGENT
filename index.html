@@ -68,6 +68,10 @@
             </button>
           </form>
 
+          <div style="text-align: center; margin-top: 14px; font-size: 0.85rem; color: var(--text-secondary);">
+            Don't have an account? <a href="#" id="link-switch-to-signup" style="color: var(--accent); font-weight: 600;">Create Account</a>
+          </div>
+
           <div class="portal-divider">
             <span>or try without account</span>
           </div>
@@ -163,6 +167,10 @@
               <span>Create Account & Start</span>
             </button>
           </form>
+
+          <div style="text-align: center; margin-top: 14px; font-size: 0.85rem; color: var(--text-secondary);">
+            Already have an account? <a href="#" id="link-switch-to-login" style="color: var(--accent); font-weight: 600;">Sign In</a>
+          </div>
         </div>
       </div>
 
@@ -919,20 +927,44 @@
           <i data-lucide="x"></i>
         </button>
       </div>
-      <div class="modal-body">
-        <div style="text-align: center; margin-bottom: 16px;">
-          <div style="width: 48px; height: 48px; background: rgba(16, 185, 129, 0.15); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: var(--accent); margin-bottom: 8px;">
-            <i data-lucide="key-round"></i>
-          </div>
-          <h4 style="font-weight: 700; margin-bottom: 6px;">Forgot Your Password?</h4>
-          <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
-            To ensure complete privacy and security, password resets require active transactional email infrastructure. In this local installation, you can easily register a new account or contact your local system administrator.
+      <form id="form-reset-password" novalidate>
+        <div class="modal-body">
+          <div id="reset-error-alert" class="auth-alert danger" style="display: none; margin-bottom: 14px;"></div>
+          <div id="reset-success-alert" class="auth-alert success" style="display: none; margin-bottom: 14px;"></div>
+
+          <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;">
+            Enter your registered username, email, or full name and your new password to reset your credentials instantly.
           </p>
+
+          <div class="form-group">
+            <label class="form-label" for="reset-identifier">Username, Email, or Name</label>
+            <div class="input-with-icon">
+              <i data-lucide="user"></i>
+              <input type="text" id="reset-identifier" class="form-control" placeholder="e.g. klm_89 or parthiv" required autocomplete="username">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="reset-password">New Password</label>
+            <div class="input-with-icon">
+              <i data-lucide="lock"></i>
+              <input type="password" id="reset-password" class="form-control" placeholder="At least 8 characters" required autocomplete="new-password">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" for="reset-confirm-password">Confirm New Password</label>
+            <div class="input-with-icon">
+              <i data-lucide="lock"></i>
+              <input type="password" id="reset-confirm-password" class="form-control" placeholder="Re-enter new password" required autocomplete="new-password">
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary btn-block btn-cancel-modal">Back to Sign In</button>
-      </div>
+        <div class="modal-footer" style="display: flex; gap: 10px;">
+          <button type="button" class="btn btn-secondary close-modal" style="flex: 1;">Cancel</button>
+          <button type="submit" id="btn-submit-reset-pass" class="btn btn-primary" style="flex: 2;">Reset Password</button>
+        </div>
+      </form>
     </div>
   </div>
 
