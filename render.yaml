@@ -4,11 +4,13 @@ services:
     env: node
     plan: free
     buildCommand: npm install
-    startCommand: node server.js
+    startCommand: node --experimental-sqlite server.js
     healthCheckPath: /health
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
         value: 22.12.0
+      - key: NODE_OPTIONS
+        value: --experimental-sqlite
       - key: SESSION_SECRET
         generateValue: true

@@ -4,8 +4,8 @@
   "description": "Where Did My Money Go? — Personal Spending and Budget Tracker",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
+    "start": "node --experimental-sqlite server.js",
+    "dev": "node --experimental-sqlite server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["finance", "budget", "tracker", "spending", "savings"],

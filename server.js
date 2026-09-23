@@ -6,7 +6,26 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const os = require('os');
-const { DatabaseSync } = require('node:sqlite');
+let DatabaseSync;
+try {
+  DatabaseSync = require('node:sqlite').DatabaseSync;
+} catch (err) {
+  // If node:sqlite is not registered, auto-respawn process with --experimental-sqlite flag
+  if (!process.execArgv.includes('--experimental-sqlite') && !process.env._RESPAWNED_SQLITE) {
+    console.log('[Money Tracker] Activating --experimental-sqlite flag for database support...');
+    const { spawn } = require('child_process');
+    const child = spawn(process.execPath, ['--experimental-sqlite', ...process.execArgv, ...process.argv.slice(1)], {
+      stdio: 'inherit',
+      env: { ...process.env, _RESPAWNED_SQLITE: '1' }
+    });
+    child.on('exit', (code, signal) => {
+      process.exit(code !== null ? code : (signal ? 1 : 0));
+    });
+    return;
+  }
+  console.error('Fatal: SQLite module could not be initialized:', err.message);
+  process.exit(1);
+}
 require('dotenv').config();
 
 const app = express();
