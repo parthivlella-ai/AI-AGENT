@@ -284,20 +284,29 @@ window.AppUIRender = {
 
   // Update all user-related profile UI displays
   updateUserProfileDisplays() {
-    const user = window.AppAuth.currentUser || { name: window.AppState.settings.userName || "User", email: window.AppState.settings.email || "" };
+    const user = window.AppAuth.currentUser || {
+      name: window.AppState.settings.userName || "User",
+      username: window.AppState.settings.username || "user",
+      email: window.AppState.settings.email || ""
+    };
     const name = user.name || "User";
+    const username = user.username ? (user.username.startsWith("@") ? user.username : `@${user.username}`) : "@user";
     const email = user.email || "";
     const initial = (name.charAt(0) || "U").toUpperCase();
 
     // Top Bar Chip
     const topAvatar = document.getElementById("topbar-avatar");
     const topName = document.getElementById("topbar-user-name");
+    const topUsername = document.getElementById("topbar-username");
     const dropName = document.getElementById("dropdown-user-name");
+    const dropHandle = document.getElementById("dropdown-username-handle");
     const dropEmail = document.getElementById("dropdown-user-email");
 
     if (topAvatar) topAvatar.textContent = initial;
     if (topName) topName.textContent = name;
+    if (topUsername) topUsername.textContent = username;
     if (dropName) dropName.textContent = name;
+    if (dropHandle) dropHandle.textContent = username;
     if (dropEmail) dropEmail.textContent = email;
 
     // Greeting Banner
@@ -324,6 +333,29 @@ window.AppUIRender = {
     if (setAvatar) setAvatar.textContent = initial;
     if (setName) setName.value = name;
     if (setEmail) setEmail.value = email;
+
+    // Populate Data Center Modal Form Fields
+    const dcAvatar = document.getElementById("dc-avatar-preview");
+    const dcName = document.getElementById("dc-header-name");
+    const dcHandle = document.getElementById("dc-header-handle");
+    const dcInputName = document.getElementById("dc-input-name");
+    const dcInputUsername = document.getElementById("dc-input-username");
+    const dcInputEmail = document.getElementById("dc-input-email");
+    const dcInputPhone = document.getElementById("dc-input-phone");
+    const dcInputBio = document.getElementById("dc-input-bio");
+    const dcInputIncome = document.getElementById("dc-input-income");
+    const dcInputTarget = document.getElementById("dc-input-savings-target");
+
+    if (dcAvatar) dcAvatar.textContent = initial;
+    if (dcName) dcName.textContent = name;
+    if (dcHandle) dcHandle.textContent = username;
+    if (dcInputName) dcInputName.value = name;
+    if (dcInputUsername) dcInputUsername.value = user.username ? user.username.replace(/^@/, '') : '';
+    if (dcInputEmail) dcInputEmail.value = email;
+    if (dcInputPhone) dcInputPhone.value = user.phone || "";
+    if (dcInputBio) dcInputBio.value = user.bio || "";
+    if (dcInputIncome) dcInputIncome.value = user.monthly_income || window.AppState.settings.monthlyIncome || "";
+    if (dcInputTarget) dcInputTarget.value = window.AppState.savingGoals.target || 2500;
   },
 
   // Setup Authentication Modals & Actions
@@ -333,35 +365,39 @@ window.AppUIRender = {
     const modalForgot = document.getElementById("modal-forgot-password");
     const modalDeleteAccount = document.getElementById("modal-confirm-delete-account");
 
+    const tabPortalLogin = document.getElementById("tab-portal-login");
+    const tabPortalSignup = document.getElementById("tab-portal-signup");
+    const secPortalLogin = document.getElementById("portal-section-login");
+    const secPortalSignup = document.getElementById("portal-section-signup");
+
     const openLogin = () => {
       document.querySelectorAll(".modal-overlay").forEach(m => m.classList.remove("open"));
       const alertEl = document.getElementById("login-error-alert");
       if (alertEl) alertEl.style.display = "none";
-      if (modalLogin) modalLogin.classList.add("open");
+      if (tabPortalLogin) tabPortalLogin.classList.add("active");
+      if (tabPortalSignup) tabPortalSignup.classList.remove("active");
+      if (secPortalLogin) secPortalLogin.style.display = "block";
+      if (secPortalSignup) secPortalSignup.style.display = "none";
+      const userField = document.getElementById("login-email");
+      if (userField) userField.focus();
     };
 
     const openSignup = () => {
       document.querySelectorAll(".modal-overlay").forEach(m => m.classList.remove("open"));
       const alertEl = document.getElementById("signup-error-alert");
       if (alertEl) alertEl.style.display = "none";
-      if (modalSignup) modalSignup.classList.add("open");
+      if (tabPortalSignup) tabPortalSignup.classList.add("active");
+      if (tabPortalLogin) tabPortalLogin.classList.remove("active");
+      if (secPortalSignup) secPortalSignup.style.display = "block";
+      if (secPortalLogin) secPortalLogin.style.display = "none";
+      const nameField = document.getElementById("signup-name");
+      if (nameField) nameField.focus();
     };
 
-    // Landing Page buttons
-    const btnLandingLogin = document.getElementById("landing-login-btn");
-    const btnLandingStartLogin = document.getElementById("landing-start-login-btn");
-    const btnLandingSignup = document.getElementById("landing-signup-btn");
-    const btnLandingStartSignup = document.getElementById("landing-start-signup-btn");
-    const btnLandingDemo = document.getElementById("onboarding-load-demo");
-    const btnDashDemo = document.getElementById("dash-load-demo-btn");
-    const btnSettingsDemo = document.getElementById("settings-load-demo");
+    if (tabPortalLogin) tabPortalLogin.addEventListener("click", openLogin);
+    if (tabPortalSignup) tabPortalSignup.addEventListener("click", openSignup);
 
-    if (btnLandingLogin) btnLandingLogin.addEventListener("click", openLogin);
-    if (btnLandingStartLogin) btnLandingStartLogin.addEventListener("click", openLogin);
-    if (btnLandingSignup) btnLandingSignup.addEventListener("click", openSignup);
-    if (btnLandingStartSignup) btnLandingStartSignup.addEventListener("click", openSignup);
-
-    // Switch between login & signup inside modal
+    // Switch between login & signup inside portal / links
     const linkToSignup = document.getElementById("link-switch-to-signup");
     const linkToLogin = document.getElementById("link-switch-to-login");
     const linkForgot = document.getElementById("link-forgot-password");
@@ -370,7 +406,6 @@ window.AppUIRender = {
     if (linkToLogin) linkToLogin.addEventListener("click", (e) => { e.preventDefault(); openLogin(); });
     if (linkForgot) linkForgot.addEventListener("click", (e) => {
       e.preventDefault();
-      if (modalLogin) modalLogin.classList.remove("open");
       if (modalForgot) modalForgot.classList.add("open");
     });
 
@@ -392,12 +427,60 @@ window.AppUIRender = {
       });
     }
 
-    // Login Form Submit
+    // Dynamic Password Strength Evaluation on Signup input
+    const signupPassInput = document.getElementById("signup-password");
+    const strengthContainer = document.getElementById("signup-password-strength");
+    const strengthBadge = document.getElementById("strength-label-badge");
+    const strengthTips = document.getElementById("strength-feedback-tips");
+    const segments = [
+      document.getElementById("strength-seg-1"),
+      document.getElementById("strength-seg-2"),
+      document.getElementById("strength-seg-3"),
+      document.getElementById("strength-seg-4")
+    ];
+
+    if (signupPassInput) {
+      signupPassInput.addEventListener("input", () => {
+        const val = signupPassInput.value;
+        if (!val) {
+          if (strengthContainer) strengthContainer.style.display = "none";
+          return;
+        }
+
+        if (strengthContainer) strengthContainer.style.display = "block";
+        const evalResult = window.AppAuth.calculatePasswordStrength(val);
+
+        if (strengthBadge) {
+          strengthBadge.textContent = evalResult.label;
+          strengthBadge.style.background = evalResult.color + "22";
+          strengthBadge.style.color = evalResult.color;
+        }
+
+        segments.forEach((seg, idx) => {
+          if (!seg) return;
+          if (idx < evalResult.score) {
+            seg.style.backgroundColor = evalResult.color;
+          } else {
+            seg.style.backgroundColor = "var(--border-color)";
+          }
+        });
+
+        if (strengthTips) {
+          if (evalResult.tips && evalResult.tips.length > 0) {
+            strengthTips.textContent = "Suggestions: " + evalResult.tips.join(" • ");
+          } else {
+            strengthTips.textContent = "Great job! Strong, fortified password.";
+          }
+        }
+      });
+    }
+
+    // Login Form Submit (Supports Username or Email)
     const formLogin = document.getElementById("form-login");
     if (formLogin) {
       formLogin.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const email = document.getElementById("login-email").value;
+        const identifier = document.getElementById("login-email").value;
         const password = document.getElementById("login-password").value;
         const alertEl = document.getElementById("login-error-alert");
         const submitBtn = document.getElementById("btn-submit-login");
@@ -405,13 +488,13 @@ window.AppUIRender = {
         if (submitBtn) submitBtn.disabled = true;
         if (alertEl) alertEl.style.display = "none";
 
-        const result = await window.AppAuth.login(email, password);
+        const result = await window.AppAuth.login(identifier, password);
 
         if (submitBtn) submitBtn.disabled = false;
 
         if (!result.success) {
           if (alertEl) {
-            alertEl.textContent = result.error || "Email or password is incorrect.";
+            alertEl.textContent = result.error || "Username, email, or password is incorrect.";
             alertEl.style.display = "block";
           }
           return;
@@ -428,22 +511,25 @@ window.AppUIRender = {
       });
     }
 
-    // Signup Form Submit
+    // Signup Form Submit (With Username, Currency, and Income)
     const formSignup = document.getElementById("form-signup");
     if (formSignup) {
       formSignup.addEventListener("submit", async (e) => {
         e.preventDefault();
         const name = document.getElementById("signup-name").value;
+        const username = document.getElementById("signup-username").value;
         const email = document.getElementById("signup-email").value;
         const password = document.getElementById("signup-password").value;
         const confirmPass = document.getElementById("signup-confirm-password").value;
+        const currency = document.getElementById("signup-currency") ? document.getElementById("signup-currency").value : "₹";
+        const monthlyIncome = document.getElementById("signup-income") ? document.getElementById("signup-income").value : 0;
         const alertEl = document.getElementById("signup-error-alert");
         const submitBtn = document.getElementById("btn-submit-signup");
 
         if (submitBtn) submitBtn.disabled = true;
         if (alertEl) alertEl.style.display = "none";
 
-        const result = await window.AppAuth.register(name, email, password, confirmPass);
+        const result = await window.AppAuth.register(name, email, password, confirmPass, username, currency, monthlyIncome);
 
         if (submitBtn) submitBtn.disabled = false;
 
@@ -462,7 +548,7 @@ window.AppUIRender = {
         this.updateUserProfileDisplays();
         this.showLandingPage(false);
         this.switchScreen("screen-dashboard");
-        this.showToast(`Account created! Welcome to Where Did My Money Go, ${result.user.name}!`, "success");
+        this.showToast(`Welcome to Where Did My Money Go?, ${result.user.name}! Your account is active.`, "success");
       });
     }
 
@@ -470,6 +556,8 @@ window.AppUIRender = {
     const chipBtn = document.getElementById("profile-chip-btn");
     const dropdownMenu = document.getElementById("profile-dropdown-menu");
     const btnProfile = document.getElementById("dropdown-btn-profile");
+    const btnActivity = document.getElementById("dropdown-btn-activity");
+    const btnExport = document.getElementById("dropdown-btn-export");
     const btnSettings = document.getElementById("dropdown-btn-settings");
     const btnLogout = document.getElementById("dropdown-btn-logout");
     const btnMobileLogout = document.getElementById("mobile-logout-btn");
@@ -488,8 +576,33 @@ window.AppUIRender = {
       });
     }
 
-    if (btnProfile) btnProfile.addEventListener("click", () => this.switchScreen("screen-settings"));
-    if (btnSettings) btnSettings.addEventListener("click", () => this.switchScreen("screen-settings"));
+    if (btnProfile) {
+      btnProfile.addEventListener("click", () => {
+        if (dropdownMenu) dropdownMenu.classList.remove("open");
+        this.openDataCenterModal("tab-profile-edit");
+      });
+    }
+
+    if (btnActivity) {
+      btnActivity.addEventListener("click", () => {
+        if (dropdownMenu) dropdownMenu.classList.remove("open");
+        this.openDataCenterModal("tab-audit-trail");
+      });
+    }
+
+    if (btnExport) {
+      btnExport.addEventListener("click", () => {
+        if (dropdownMenu) dropdownMenu.classList.remove("open");
+        this.openDataCenterModal("tab-data-ownership");
+      });
+    }
+
+    if (btnSettings) {
+      btnSettings.addEventListener("click", () => {
+        if (dropdownMenu) dropdownMenu.classList.remove("open");
+        this.switchScreen("screen-settings");
+      });
+    }
 
     const handleLogout = async () => {
       if (dropdownMenu) dropdownMenu.classList.remove("open");
@@ -530,23 +643,376 @@ window.AppUIRender = {
       });
     }
 
-    // Demo Data Actions
+    // Demo Data Actions (Instant 1-Click Access)
     const handleDemoLoad = async () => {
-      if (window.AppAuth && window.AppAuth.isAuthenticated) {
-        window.DemoData.loadDemoData();
-        this.updateUserProfileDisplays();
-        this.showLandingPage(false);
-        this.switchScreen("screen-dashboard");
-        this.showToast("Demo transaction history loaded into your account!", "success");
-      } else {
-        openSignup();
-        this.showToast("Create a quick account to test demo data in your private workspace!", "info");
+      if (!window.AppAuth || !window.AppAuth.isAuthenticated) {
+        window.AppAuth.currentUser = {
+          id: "guest_demo",
+          name: "Demo Explorer",
+          email: "demo@moneytracker.app",
+          username: "demo_explorer",
+          currency: "₹"
+        };
+        window.AppAuth.isAuthenticated = true;
       }
+      window.DemoData.loadDemoData();
+      this.updateUserProfileDisplays();
+      this.showLandingPage(false);
+      this.switchScreen("screen-dashboard");
+      this.showToast("⚡ Live Demo mode loaded! Explore features freely.", "success");
     };
 
     if (btnLandingDemo) btnLandingDemo.addEventListener("click", handleDemoLoad);
     if (btnDashDemo) btnDashDemo.addEventListener("click", handleDemoLoad);
     if (btnSettingsDemo) btnSettingsDemo.addEventListener("click", handleDemoLoad);
+
+    // Initialize Data Center, Notifications, and Command Palette Listeners
+    this.setupDataCenterListeners();
+    this.setupNotificationListeners();
+    this.setupCommandPaletteListeners();
+  },
+
+  // Open User Profile & Data Center Modal with designated tab
+  async openDataCenterModal(targetTabId = "tab-profile-edit") {
+    const modal = document.getElementById("modal-user-data-center");
+    if (!modal) return;
+
+    this.updateUserProfileDisplays();
+
+    // Set active tab button and pane
+    document.querySelectorAll(".dc-tab-btn").forEach(btn => {
+      if (btn.getAttribute("data-tab") === targetTabId) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+
+    document.querySelectorAll(".dc-tab-pane").forEach(pane => {
+      if (pane.id === targetTabId) {
+        pane.classList.add("active");
+      } else {
+        pane.classList.remove("active");
+      }
+    });
+
+    // Update stats for data ownership tab
+    const exportTx = document.getElementById("export-tx-count");
+    const exportPlans = document.getElementById("export-plans-count");
+    const exportAudit = document.getElementById("export-audit-count");
+
+    if (exportTx) exportTx.textContent = window.AppState.transactions.length;
+    if (exportPlans) exportPlans.textContent = window.AppState.savingGoals.habits.length;
+
+    modal.classList.add("open");
+
+    // If activity tab, load live logs
+    if (targetTabId === "tab-audit-trail") {
+      this.refreshActivityTrailUI();
+    }
+  },
+
+  // Setup User Profile & Data Center Modal Interactivity
+  setupDataCenterListeners() {
+    // Tab switching
+    document.querySelectorAll(".dc-tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const tabId = btn.getAttribute("data-tab");
+        document.querySelectorAll(".dc-tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".dc-tab-pane").forEach(p => p.classList.remove("active"));
+
+        btn.classList.add("active");
+        const targetPane = document.getElementById(tabId);
+        if (targetPane) targetPane.classList.add("active");
+
+        if (tabId === "tab-audit-trail") {
+          this.refreshActivityTrailUI();
+        }
+      });
+    });
+
+    // Form Profile Edit Submit
+    const formProfile = document.getElementById("form-dc-profile");
+    if (formProfile) {
+      formProfile.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const alertEl = document.getElementById("dc-profile-alert");
+        const saveBtn = document.getElementById("btn-save-dc-profile");
+
+        const name = document.getElementById("dc-input-name").value;
+        const username = document.getElementById("dc-input-username").value;
+        const phone = document.getElementById("dc-input-phone").value;
+        const bio = document.getElementById("dc-input-bio").value;
+        const monthlyIncome = document.getElementById("dc-input-income").value;
+        const savingTarget = document.getElementById("dc-input-savings-target").value;
+
+        if (saveBtn) saveBtn.disabled = true;
+        if (alertEl) alertEl.style.display = "none";
+
+        try {
+          await window.AppState.updateProfile({
+            name,
+            username,
+            phone,
+            bio,
+            monthlyIncome: parseFloat(monthlyIncome) || 0,
+            savingTarget: parseFloat(savingTarget) || 2500
+          });
+
+          this.updateUserProfileDisplays();
+          this.showToast("Profile and account details saved successfully!", "success");
+
+          const modal = document.getElementById("modal-user-data-center");
+          if (modal) modal.classList.remove("open");
+        } catch (err) {
+          if (alertEl) {
+            alertEl.className = "auth-alert danger";
+            alertEl.textContent = err.message || "Failed to update profile.";
+            alertEl.style.display = "block";
+          }
+        } finally {
+          if (saveBtn) saveBtn.disabled = false;
+        }
+      });
+    }
+
+    // Refresh Activity Button
+    const btnRefreshAct = document.getElementById("btn-refresh-activity");
+    if (btnRefreshAct) {
+      btnRefreshAct.addEventListener("click", () => this.refreshActivityTrailUI());
+    }
+
+    // 1-Click Export Data Button
+    const btnExportData = document.getElementById("btn-export-all-data");
+    if (btnExportData) {
+      btnExportData.addEventListener("click", async () => {
+        btnExportData.disabled = true;
+        btnExportData.innerHTML = `<i data-lucide="loader-2" class="spin"></i> Exporting...`;
+        if (window.lucide) window.lucide.createIcons();
+
+        const res = await window.AppAuth.exportUserData();
+        btnExportData.disabled = false;
+        btnExportData.innerHTML = `<i data-lucide="download"></i> Download Complete Backup (JSON)`;
+        if (window.lucide) window.lucide.createIcons();
+
+        if (res.success) {
+          this.showToast("Personal data archive downloaded successfully!", "success");
+        } else {
+          this.showToast(res.error || "Failed to download backup.", "danger");
+        }
+      });
+    }
+  },
+
+  // Refresh and render the complete Activity Audit Trail from start to end
+  async refreshActivityTrailUI() {
+    const container = document.getElementById("dc-activity-timeline");
+    if (!container) return;
+
+    container.innerHTML = `
+      <div style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.85rem;">
+        Loading live activity log...
+      </div>
+    `;
+
+    const logs = await window.AppState.loadActivityLogs(50);
+    const exportAudit = document.getElementById("export-audit-count");
+    if (exportAudit) exportAudit.textContent = logs.length;
+
+    if (!logs || logs.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 32px 16px; color: var(--text-muted);">
+          <i data-lucide="shield-check" style="width: 32px; height: 32px; margin-bottom: 8px; opacity: 0.5;"></i>
+          <div>No logged activity yet. Your journey starts with your first action!</div>
+        </div>
+      `;
+      if (window.lucide) window.lucide.createIcons();
+      return;
+    }
+
+    let html = '';
+    logs.forEach(log => {
+      const date = new Date(log.timestamp);
+      const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+
+      html += `
+        <div class="activity-item">
+          <div class="activity-node"></div>
+          <div class="activity-card">
+            <div class="activity-meta-row">
+              <span class="activity-tag">${this.escapeHtml(log.action_type || 'ACTIVITY')}</span>
+              <span class="activity-time">${dateStr} • ${timeStr}</span>
+            </div>
+            <div class="activity-desc">${this.escapeHtml(log.description || '')}</div>
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+    if (window.lucide) window.lucide.createIcons();
+  },
+
+  // Setup Notifications Bell and Dropdown
+  setupNotificationListeners() {
+    const bellBtn = document.getElementById("notif-bell-btn");
+    const dropdown = document.getElementById("notif-dropdown");
+    const markAllBtn = document.getElementById("btn-mark-all-read");
+
+    if (bellBtn && dropdown) {
+      bellBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle("active");
+        this.renderNotificationsUI();
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!bellBtn.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.classList.remove("active");
+        }
+      });
+    }
+
+    if (markAllBtn) {
+      markAllBtn.addEventListener("click", async () => {
+        await window.AppAuth.markAllNotificationsRead();
+        this.renderNotificationsUI();
+        this.showToast("All notifications marked as read.", "info");
+      });
+    }
+  },
+
+  // Render Notifications List
+  renderNotificationsUI() {
+    const notifs = window.AppState.notifications || [];
+    const container = document.getElementById("notif-list-body");
+    const badge = document.getElementById("notif-unread-badge");
+
+    const unreadCount = notifs.filter(n => !n.is_read).length;
+    if (badge) {
+      badge.style.display = unreadCount > 0 ? "block" : "none";
+    }
+
+    if (!container) return;
+
+    if (notifs.length === 0) {
+      container.innerHTML = `
+        <div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+          No notifications yet. You're all caught up!
+        </div>
+      `;
+      return;
+    }
+
+    let html = '';
+    notifs.forEach(n => {
+      const isUnread = !n.is_read;
+      const date = new Date(n.created_at);
+      const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      html += `
+        <div class="notif-item ${isUnread ? 'unread' : ''}" data-id="${n.id}">
+          <div class="notif-icon-circle">
+            <i data-lucide="bell" width="16" height="16"></i>
+          </div>
+          <div style="flex: 1;">
+            <div class="notif-content-title">${this.escapeHtml(n.title)}</div>
+            <div class="notif-content-msg">${this.escapeHtml(n.message)}</div>
+            <div class="notif-time-ago">${timeStr}</div>
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+    if (window.lucide) window.lucide.createIcons();
+
+    // Click to mark single notification read
+    container.querySelectorAll(".notif-item").forEach(item => {
+      item.addEventListener("click", async () => {
+        const id = item.getAttribute("data-id");
+        if (id) {
+          await window.AppAuth.markNotificationRead(id);
+          item.classList.remove("unread");
+          const remainingUnread = (window.AppState.notifications || []).filter(n => !n.is_read).length;
+          if (badge) badge.style.display = remainingUnread > 0 ? "block" : "none";
+        }
+      });
+    });
+  },
+
+  // Setup Command Palette (Ctrl+K or Search Pill)
+  setupCommandPaletteListeners() {
+    const modal = document.getElementById("modal-command-palette");
+    const searchBtn = document.getElementById("btn-quick-search");
+    const input = document.getElementById("cmd-palette-input");
+    const results = document.getElementById("cmd-palette-results");
+
+    const openPalette = () => {
+      if (modal) {
+        modal.classList.add("open");
+        if (input) {
+          input.value = "";
+          input.focus();
+        }
+        if (results) {
+          results.querySelectorAll(".cmd-item").forEach(item => item.style.display = "flex");
+        }
+      }
+    };
+
+    if (searchBtn) searchBtn.addEventListener("click", openPalette);
+
+    // Global Keyboard Shortcut: Ctrl+K or Cmd+K
+    window.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        openPalette();
+      }
+      if (e.key === "Escape") {
+        document.querySelectorAll(".modal-overlay").forEach(m => m.classList.remove("open"));
+        const notifDropdown = document.getElementById("notif-dropdown");
+        if (notifDropdown) notifDropdown.classList.remove("active");
+        const profileDropdown = document.getElementById("profile-dropdown-menu");
+        if (profileDropdown) profileDropdown.classList.remove("open");
+      }
+    });
+
+    // Real-time filtering
+    if (input && results) {
+      input.addEventListener("input", () => {
+        const query = input.value.toLowerCase().trim();
+        results.querySelectorAll(".cmd-item").forEach(item => {
+          const text = item.textContent.toLowerCase();
+          if (text.includes(query)) {
+            item.style.display = "flex";
+          } else {
+            item.style.display = "none";
+          }
+        });
+      });
+    }
+
+    // Palette Item Clicks
+    if (results) {
+      results.querySelectorAll(".cmd-item").forEach(item => {
+        item.addEventListener("click", () => {
+          const action = item.getAttribute("data-action");
+          if (modal) modal.classList.remove("open");
+
+          if (action === "navigate") {
+            const screen = item.getAttribute("data-screen");
+            if (screen) this.switchScreen(screen);
+          } else if (action === "add-tx") {
+            const addBtn = document.getElementById("add-tx-btn");
+            if (addBtn) addBtn.click();
+          } else if (action === "open-profile") {
+            this.openDataCenterModal("tab-profile-edit");
+          }
+        });
+      });
+    }
   },
 
   // Setup CSV Drag & Drop UI Listeners
@@ -768,6 +1234,8 @@ window.AppUIRender = {
 
   // Central Router Dispatch
   renderActiveScreen(state) {
+    state = (state && state.transactions) ? state : (window.AppState || { transactions: [], settings: { theme: 'dark' } });
+    if (!state.settings) state.settings = { theme: 'dark' };
     // Sync current theme class
     const isDark = state.settings.theme === "dark";
     document.body.classList.toggle("dark-mode", isDark);
@@ -805,6 +1273,7 @@ window.AppUIRender = {
      DASHBOARD SCREEN RENDERING
      ========================================== */
   renderDashboard(state) {
+    state = (state && state.transactions) ? state : (window.AppState || { transactions: [] });
     const currentTxs = window.AppAnalytics.getTransactionsForMonth(state.transactions, 0);
 
     // Check empty state

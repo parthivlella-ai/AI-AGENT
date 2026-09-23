@@ -1,14 +1,14 @@
 {
-  "name": "agent-w",
+  "name": "money-tracker",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Where Did My Money Go? — Personal Spending and Budget Tracker",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": ["finance", "budget", "tracker", "spending", "savings"],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
@@ -20,6 +20,6 @@
     "jsonwebtoken": "^9.0.3"
   },
   "engines": {
-    "node": ">=22.x"
+    "node": ">=22.5.0"
   }
 }

@@ -1,6 +1,7 @@
 /**
  * state.js - Central State Management & Server Synchronization
- * Handles user-isolated data fetching, CRUD operations, and reactive UI subscriptions.
+ * Handles user-isolated data fetching, CRUD operations, profile synchronization,
+ * complete user data trail, and reactive UI subscriptions.
  */
 
 window.AppState = {
@@ -11,11 +12,17 @@ window.AppState = {
   },
   settings: {
     userName: "User",
+    username: "",
     email: "",
     currency: "₹",
     theme: "dark",
-    apiKey: ""
+    apiKey: "",
+    monthlyIncome: 0,
+    monthlyBudget: 0
   },
+  userProfile: null,
+  activityLogs: [],
+  notifications: [],
   chatHistory: [],
   listeners: [],
   isLoading: false,
@@ -40,7 +47,10 @@ window.AppState = {
   clearLocalMemory() {
     this.transactions = [];
     this.savingGoals = { target: 2500, habits: [] };
-    this.settings = { userName: "User", email: "", currency: "₹", theme: "dark", apiKey: "" };
+    this.settings = { userName: "User", username: "", email: "", currency: "₹", theme: "dark", apiKey: "", monthlyIncome: 0, monthlyBudget: 0 };
+    this.userProfile = null;
+    this.activityLogs = [];
+    this.notifications = [];
     this.chatHistory = [];
     this.notify();
   },
@@ -55,11 +65,13 @@ window.AppState = {
     this.isLoading = true;
     try {
       // Parallel fetch for current authenticated user
-      const [txRes, goalsRes, settingsRes, chatRes] = await Promise.all([
+      const [txRes, goalsRes, settingsRes, chatRes, profRes, notifRes] = await Promise.all([
         fetch("/api/transactions"),
         fetch("/api/goals"),
         fetch("/api/settings"),
-        fetch("/api/chat")
+        fetch("/api/chat"),
+        fetch("/api/user/profile"),
+        fetch("/api/notifications")
       ]);
 
       if (txRes.ok) {
@@ -80,6 +92,7 @@ window.AppState = {
         this.settings = {
           ...this.settings,
           userName: settingsData.userName || (window.AppAuth.currentUser && window.AppAuth.currentUser.name) || "User",
+          username: (window.AppAuth.currentUser && window.AppAuth.currentUser.username) || "",
           email: settingsData.email || (window.AppAuth.currentUser && window.AppAuth.currentUser.email) || "",
           currency: settingsData.currency || "₹",
           theme: settingsData.theme || "dark"
@@ -91,6 +104,21 @@ window.AppState = {
         }
       }
 
+      if (profRes.ok) {
+        this.userProfile = await profRes.json();
+        if (this.userProfile && this.userProfile.user) {
+          this.settings.username = this.userProfile.user.username || this.settings.username;
+          this.settings.monthlyIncome = this.userProfile.user.monthly_income || 0;
+          if (this.userProfile.settings) {
+            this.settings.monthlyBudget = this.userProfile.settings.monthly_budget || 0;
+          }
+        }
+      }
+
+      if (notifRes.ok) {
+        this.notifications = await notifRes.json();
+      }
+
       if (chatRes.ok) {
         this.chatHistory = await chatRes.json();
       }
@@ -99,6 +127,47 @@ window.AppState = {
     } finally {
       this.isLoading = false;
       this.notify();
+    }
+  },
+
+  // Fetch Activity Logs (User trail from start to end)
+  async loadActivityLogs(limit = 40) {
+    try {
+      const res = await fetch(`/api/user/activity?limit=${limit}`);
+      if (res.ok) {
+        this.activityLogs = await res.json();
+        this.notify();
+        return this.activityLogs;
+      }
+    } catch (e) {
+      console.error("Error loading activity logs:", e);
+    }
+    return [];
+  },
+
+  // Update Profile details
+  async updateProfile(profileData) {
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileData)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to update profile.");
+      }
+      if (data.user) {
+        this.settings.userName = data.user.name;
+        this.settings.username = data.user.username;
+        this.settings.monthlyIncome = data.user.monthly_income;
+      }
+      await this.loadUserData();
+      await this.loadActivityLogs();
+      return { success: true, user: data.user };
+    } catch (e) {
+      console.error("Profile update error:", e);
+      throw e;
     }
   },
 
@@ -113,6 +182,7 @@ window.AppState = {
     this.transactions = [];
     this.savingGoals = { target: 2500, habits: [] };
     this.chatHistory = [];
+    await this.loadActivityLogs();
     this.notify();
   },
 
@@ -140,6 +210,7 @@ window.AppState = {
         const createdTx = await res.json();
         this.transactions.push(createdTx);
         this.sortTransactions();
+        this.loadActivityLogs();
         this.notify();
         return createdTx;
       } else {
@@ -170,6 +241,7 @@ window.AppState = {
             amount: parseFloat(updatedFields.amount)
           };
           this.sortTransactions();
+          this.loadActivityLogs();
           this.notify();
         }
         return true;
@@ -190,6 +262,7 @@ window.AppState = {
 
       if (res.ok) {
         this.transactions = this.transactions.filter(t => t.id !== id);
+        this.loadActivityLogs();
         this.notify();
         return true;
       }
@@ -211,6 +284,7 @@ window.AppState = {
 
       if (res.ok) {
         await this.loadUserData();
+        await this.loadActivityLogs();
         return true;
       }
       return false;
@@ -231,6 +305,7 @@ window.AppState = {
 
       if (res.ok) {
         await this.loadUserData();
+        await this.loadActivityLogs();
         return true;
       }
       return false;
@@ -265,6 +340,7 @@ window.AppState = {
       if (res.ok) {
         const newHabit = await res.json();
         this.savingGoals.habits.push(newHabit);
+        this.loadActivityLogs();
         this.notify();
         return newHabit;
       }
@@ -288,6 +364,7 @@ window.AppState = {
         const habit = this.savingGoals.habits.find(h => h.id === habitId);
         if (habit) {
           habit.status = status;
+          this.loadActivityLogs();
           this.notify();
         }
         return true;
@@ -308,6 +385,7 @@ window.AppState = {
 
       if (res.ok) {
         this.savingGoals.habits = this.savingGoals.habits.filter(h => h.id !== habitId);
+        this.loadActivityLogs();
         this.notify();
         return true;
       }
@@ -328,6 +406,7 @@ window.AppState = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ target: val })
       });
+      this.loadActivityLogs();
     } catch (e) {
       console.error("Error updating savings target", e);
     }
@@ -353,6 +432,9 @@ window.AppState = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sender, text })
       });
+      if (sender === "user") {
+        this.loadActivityLogs();
+      }
     } catch (e) {
       console.error("Error saving chat message to server", e);
     }

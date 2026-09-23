@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Where Did My Money Go? — AI Spending Behavior Analyst</title>
+  <title>Where Did My Money Go? — Smart Expense & Budget Tracker</title>
   <!-- Main Stylesheet -->
   <link rel="stylesheet" href="/styles.css">
   <!-- Chart.js CDN -->
@@ -14,76 +14,171 @@
 <body class="dark-mode">
 
   <!-- ==========================================
-       PUBLIC LANDING PAGE OVERLAY
+       SIMPLE & INTUITIVE DIRECT LOGIN / SIGNUP PORTAL
        ========================================== -->
   <div id="screen-landing" class="overlay-screen">
-    <!-- Landing Top Nav -->
-    <header class="landing-nav">
-      <div class="logo">
-        <i data-lucide="brain-circuit"></i>
-        <span>Where Did My Money Go?</span>
-      </div>
-      <div class="landing-nav-actions">
-        <button id="landing-login-btn" class="btn btn-secondary btn-sm">
-          <i data-lucide="log-in"></i> Login
-        </button>
-        <button id="landing-signup-btn" class="btn btn-primary btn-sm">
-          <i data-lucide="user-plus"></i> Create Account
-        </button>
-      </div>
-    </header>
-
-    <div class="landing-hero">
-      <div class="landing-tagline">Don't just track your money. Understand it.</div>
-      <h1 class="landing-title">Where Did My Money Go?</h1>
-      <p class="landing-subtitle">Your AI-powered spending behavior analyst. Discover hidden behavioral patterns, plug financial leaks, and build realistic savings habits.</p>
-      <div class="landing-ctas">
-        <button id="landing-start-signup-btn" class="btn btn-primary btn-lg">
-          <i data-lucide="user-plus"></i> Create Account
-        </button>
-        <button id="landing-start-login-btn" class="btn btn-secondary btn-lg">
-          <i data-lucide="log-in"></i> Login
-        </button>
-        <button id="onboarding-load-demo" class="btn btn-tertiary btn-lg">
-          <i data-lucide="database"></i> Explore Demo
-        </button>
-      </div>
-    </div>
-
-    <div class="landing-comparison">
-      <h2 class="landing-comparison-title">Traditional Trackers vs. Our AI Analyst</h2>
-      <div class="comparison-grid">
-        <div class="comparison-card">
-          <h3 class="comparison-header">
-            <i data-lucide="x-circle" style="color: var(--danger);"></i> Traditional Trackers Tell You WHAT
-          </h3>
-          <ul class="comparison-list">
-            <li class="comparison-item">
-              <i data-lucide="minus" style="color: var(--text-muted);"></i> Shows static category charts: <i>"Food: ₹3,200"</i>
-            </li>
-            <li class="comparison-item">
-              <i data-lucide="minus" style="color: var(--text-muted);"></i> Requires tedious manual categorization for every item.
-            </li>
-            <li class="comparison-item">
-              <i data-lucide="minus" style="color: var(--text-muted);"></i> No explanation of budget increases or behaviors.
-            </li>
-          </ul>
+    <div class="portal-entry-container">
+      <!-- Clean Brand Header -->
+      <div class="portal-brand">
+        <div class="portal-brand-badge">
+          <i data-lucide="wallet" width="30" height="30"></i>
         </div>
-        <div class="comparison-card accent-border">
-          <h3 class="comparison-header" style="color: var(--accent);">
-            <i data-lucide="check-circle" style="color: var(--success);"></i> We Tell You WHY and HOW
-          </h3>
-          <ul class="comparison-list">
-            <li class="comparison-item">
-              <i data-lucide="check" style="color: var(--success);"></i> Triggers behavioral alerts: <i>"Your late-night deliveries increased 33%. Saving target: ₹1,100."</i>
-            </li>
-            <li class="comparison-item">
-              <i data-lucide="check" style="color: var(--success);"></i> Auto-detects categories from merchant descriptions.
-            </li>
-            <li class="comparison-item">
-              <i data-lucide="check" style="color: var(--success);"></i> Generates dynamic simulators and interactive action plans.
-            </li>
-          </ul>
+        <h1 class="portal-brand-title">Where Did My Money Go?</h1>
+        <p class="portal-brand-subtitle">Smart Personal Expense & Budget Tracker</p>
+      </div>
+
+      <!-- Main Portal Card -->
+      <div class="portal-card">
+        <!-- Segmented Tab Switcher -->
+        <div class="portal-tabs">
+          <button type="button" id="tab-portal-login" class="portal-tab-btn active">Sign In</button>
+          <button type="button" id="tab-portal-signup" class="portal-tab-btn">Create Account</button>
+        </div>
+
+        <!-- Section 1: Sign In -->
+        <div id="portal-section-login">
+          <!-- Error Alert Container -->
+          <div id="login-error-alert" class="auth-alert danger" style="display: none; margin-bottom: 16px;"></div>
+
+          <form id="form-login" novalidate>
+            <div class="form-group">
+              <label class="form-label" for="login-email">Username or Email</label>
+              <div class="input-with-icon">
+                <i data-lucide="user-check"></i>
+                <input type="text" id="login-email" class="form-control" placeholder="Enter your username or email" required autocomplete="username">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label class="form-label" for="login-password" style="margin-bottom: 0;">Password</label>
+                <a href="#" id="link-forgot-password" class="auth-link-sm">Forgot password?</a>
+              </div>
+              <div class="input-with-icon" style="margin-top: 6px;">
+                <i data-lucide="lock"></i>
+                <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required autocomplete="current-password">
+                <button type="button" class="btn-toggle-password" id="btn-toggle-login-pass" aria-label="Toggle password visibility">
+                  <i data-lucide="eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" id="btn-submit-login" class="btn btn-primary btn-block btn-lg" style="margin-top: 10px; box-shadow: 0 0 20px var(--accent-glow);">
+              <span>Sign In to Dashboard</span>
+            </button>
+          </form>
+
+          <div class="portal-divider">
+            <span>or try without account</span>
+          </div>
+
+          <button type="button" id="onboarding-load-demo" class="portal-demo-btn">
+            <i data-lucide="sparkles"></i>
+            <span>⚡ Explore Live Demo (1-Click)</span>
+          </button>
+        </div>
+
+        <!-- Section 2: Create Account -->
+        <div id="portal-section-signup" style="display: none;">
+          <!-- Error Alert Container -->
+          <div id="signup-error-alert" class="auth-alert danger" style="display: none; margin-bottom: 16px;"></div>
+
+          <form id="form-signup" novalidate>
+            <div class="form-group">
+              <label class="form-label" for="signup-name">Full Name</label>
+              <div class="input-with-icon">
+                <i data-lucide="user"></i>
+                <input type="text" id="signup-name" class="form-control" placeholder="e.g. Parthiv" required autocomplete="name">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="signup-username">Username <span style="font-size: 0.72rem; color: var(--accent); font-weight: 600;">(Unique handle)</span></label>
+              <div class="input-with-icon">
+                <i data-lucide="at-sign"></i>
+                <input type="text" id="signup-username" class="form-control" placeholder="e.g. parthiv_ai" required autocomplete="username">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="signup-email">Email</label>
+              <div class="input-with-icon">
+                <i data-lucide="mail"></i>
+                <input type="email" id="signup-email" class="form-control" placeholder="name@example.com" required autocomplete="email">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="signup-password">Password</label>
+              <div class="input-with-icon">
+                <i data-lucide="lock"></i>
+                <input type="password" id="signup-password" class="form-control" placeholder="At least 8 characters" required autocomplete="new-password">
+                <button type="button" class="btn-toggle-password" id="btn-toggle-signup-pass" aria-label="Toggle password visibility">
+                  <i data-lucide="eye"></i>
+                </button>
+              </div>
+
+              <!-- Password Strength Meter -->
+              <div id="signup-password-strength" class="password-strength-container" style="display: none; margin-top: 8px;">
+                <div class="strength-header-row">
+                  <span style="color: var(--text-muted); font-size: 0.72rem;">Strength:</span>
+                  <span id="strength-label-badge" class="strength-badge" style="background: var(--bg-tertiary); color: var(--text-muted);">Too Short</span>
+                </div>
+                <div class="strength-bar-track">
+                  <div class="strength-segment" id="strength-seg-1"></div>
+                  <div class="strength-segment" id="strength-seg-2"></div>
+                  <div class="strength-segment" id="strength-seg-3"></div>
+                  <div class="strength-segment" id="strength-seg-4"></div>
+                </div>
+                <div id="strength-feedback-tips" class="strength-tips">Mix uppercase, numbers & symbols for maximum score.</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="signup-confirm-password">Confirm Password</label>
+              <div class="input-with-icon">
+                <i data-lucide="lock"></i>
+                <input type="password" id="signup-confirm-password" class="form-control" placeholder="Re-enter your password" required autocomplete="new-password">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" for="signup-currency">Currency</label>
+                <select id="signup-currency" class="form-control">
+                  <option value="₹">₹ INR (India)</option>
+                  <option value="$">$ USD (United States)</option>
+                  <option value="€">€ EUR (Europe)</option>
+                  <option value="£">£ GBP (UK)</option>
+                  <option value="A$">A$ AUD (Australia)</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" for="signup-target">Savings Goal</label>
+                <input type="number" id="signup-target" class="form-control" placeholder="2500" value="2500">
+              </div>
+            </div>
+
+            <button type="submit" id="btn-submit-signup" class="btn btn-primary btn-block btn-lg" style="margin-top: 10px; box-shadow: 0 0 20px var(--accent-glow);">
+              <span>Create Account & Start</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Trust Badges -->
+      <div class="portal-trust-badges">
+        <div class="portal-trust-badge">
+          <i data-lucide="shield-check"></i>
+          <span>Private Isolated Storage</span>
+        </div>
+        <div class="portal-trust-badge">
+          <i data-lucide="zap"></i>
+          <span>Instant Setup</span>
+        </div>
+        <div class="portal-trust-badge">
+          <i data-lucide="pie-chart"></i>
+          <span>Automated Cash Flow</span>
         </div>
       </div>
     </div>
@@ -101,7 +196,7 @@
           <i data-lucide="brain-circuit"></i>
           <div>
             <span>Where Did My Money Go?</span>
-            <div class="logo-sub">AI Spending Analyst</div>
+            <div class="logo-sub">Smart Expense Tracker</div>
           </div>
         </div>
       </div>
@@ -126,7 +221,7 @@
           <i data-lucide="sliders"></i> Savings Simulator
         </li>
         <li class="nav-item" data-screen="screen-chat">
-          <i data-lucide="message-square"></i> AI Chat Assistant
+          <i data-lucide="message-square"></i> Budget Assistant
         </li>
         <li class="nav-item" data-screen="screen-import">
           <i data-lucide="upload-cloud"></i> Import CSV
@@ -154,29 +249,67 @@
         <div class="page-title-container">
           <h1 id="desktop-page-title">Dashboard Overview</h1>
         </div>
+        
         <div class="top-bar-actions">
-          <button id="add-tx-btn" class="btn btn-primary">
+          <!-- Command Palette / Quick Search Trigger -->
+          <button id="btn-quick-search" class="cmd-search-btn" title="Quick Search (Ctrl+K)">
+            <i data-lucide="search" width="15" height="15"></i>
+            <span>Search or jump to...</span>
+            <span class="cmd-key-hint">Ctrl K</span>
+          </button>
+
+          <!-- Notifications Bell & Dropdown -->
+          <div class="notif-container" id="notif-container">
+            <button id="notif-bell-btn" class="notif-bell-btn" aria-label="Notifications" title="Notifications">
+              <i data-lucide="bell" width="18" height="18"></i>
+              <span id="notif-unread-badge" class="notif-unread-badge" style="display: none;"></span>
+            </button>
+            <div id="notif-dropdown" class="notif-dropdown">
+              <div class="notif-dropdown-header">
+                <div class="notif-dropdown-title">Notifications</div>
+                <button id="btn-mark-all-read" class="btn btn-secondary btn-sm" style="font-size: 0.72rem; padding: 3px 8px;">Mark All Read</button>
+              </div>
+              <div id="notif-list-body" class="notif-dropdown-body">
+                <div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+                  No notifications yet.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add Transaction Quick Action -->
+          <button id="add-tx-btn" class="btn btn-primary" style="box-shadow: 0 0 16px var(--accent-glow);">
             <i data-lucide="plus"></i> Add Transaction
           </button>
           
-          <!-- User Profile Menu -->
+          <!-- User Profile Pill & Dropdown -->
           <div class="profile-menu-container" id="profile-menu-container">
             <button class="profile-chip" id="profile-chip-btn" aria-haspopup="true" aria-expanded="false">
               <div class="profile-avatar" id="topbar-avatar">U</div>
-              <span class="profile-name" id="topbar-user-name">User</span>
+              <div style="display: flex; flex-direction: column; text-align: left; line-height: 1.1;">
+                <span class="profile-name" id="topbar-user-name">User</span>
+                <span id="topbar-username" style="font-size: 0.68rem; color: var(--accent); font-family: var(--font-mono);">@user</span>
+              </div>
               <i data-lucide="chevron-down" width="14" height="14"></i>
             </button>
             <div class="profile-dropdown" id="profile-dropdown-menu">
               <div class="profile-dropdown-header">
                 <div class="profile-dropdown-name" id="dropdown-user-name">User</div>
+                <div id="dropdown-username-handle" style="font-size: 0.72rem; color: var(--accent); font-family: var(--font-mono); margin-bottom: 2px;">@user</div>
                 <div class="profile-dropdown-email" id="dropdown-user-email">user@example.com</div>
               </div>
               <div class="profile-dropdown-divider"></div>
               <button class="profile-dropdown-item" id="dropdown-btn-profile">
-                <i data-lucide="user"></i> My Profile
+                <i data-lucide="user"></i> Account Profile & Data
+              </button>
+              <button class="profile-dropdown-item" id="dropdown-btn-activity">
+                <i data-lucide="history"></i> Activity Trail (Start to End)
+              </button>
+              <button class="profile-dropdown-item" id="dropdown-btn-export">
+                <i data-lucide="download"></i> Export All Data (JSON)
               </button>
               <button class="profile-dropdown-item" id="dropdown-btn-settings">
-                <i data-lucide="settings"></i> Settings
+                <i data-lucide="settings"></i> Settings & Preferences
               </button>
               <div class="profile-dropdown-divider"></div>
               <button class="profile-dropdown-item text-danger" id="dropdown-btn-logout">
@@ -761,7 +894,7 @@
       </div>
       <div class="mobile-nav-item" data-screen="screen-chat">
         <i data-lucide="message-square" width="18" height="18"></i>
-        <span>AI Chat</span>
+        <span>Budget</span>
       </div>
       <div class="mobile-nav-item" data-screen="screen-settings">
         <i data-lucide="settings" width="18" height="18"></i>
@@ -775,179 +908,7 @@
        AUTHENTICATION MODALS (LOGIN & SIGN UP)
        ========================================== -->
 
-  <!-- Modal: Login -->
-  <div id="modal-login" class="modal-overlay">
-    <div class="modal-content auth-modal-content">
-      <button type="button" class="icon-btn auth-modal-close close-modal" aria-label="Close">
-        <i data-lucide="x"></i>
-      </button>
-
-      <div class="auth-split-container">
-        <!-- Left Hero Preview -->
-        <div class="auth-hero-panel">
-          <div class="logo" style="margin-bottom: 20px;">
-            <i data-lucide="brain-circuit"></i>
-            <span>Where Did My Money Go?</span>
-          </div>
-          <h2 class="auth-hero-title">Don't just track your money.<br>Understand it.</h2>
-          <p class="auth-hero-desc">Discover the psychological triggers and daily patterns behind your spending.</p>
-
-          <div class="auth-preview-cards">
-            <div class="auth-preview-chip">
-              <span class="preview-emoji">🍔</span>
-              <div>
-                <strong>Food orders increased 32%</strong>
-                <div class="preview-sub">₹1,450 spent after 8 PM</div>
-              </div>
-            </div>
-            <div class="auth-preview-chip">
-              <span class="preview-emoji">💡</span>
-              <div>
-                <strong>Potential monthly saving</strong>
-                <div class="preview-sub" style="color: var(--success); font-weight: 700;">₹1,100 / month</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right Form Panel -->
-        <div class="auth-form-panel">
-          <div class="auth-form-header">
-            <h2 class="auth-title">Welcome Back</h2>
-            <p class="auth-subtitle">Sign in to continue understanding your spending.</p>
-          </div>
-
-          <!-- Error Alert Container -->
-          <div id="login-error-alert" class="auth-alert danger" style="display: none;"></div>
-
-          <form id="form-login" novalidate>
-            <div class="form-group">
-              <label class="form-label" for="login-email">Email</label>
-              <div class="input-with-icon">
-                <i data-lucide="mail"></i>
-                <input type="email" id="login-email" class="form-control" placeholder="Enter your email" required autocomplete="email">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <label class="form-label" for="login-password" style="margin-bottom: 0;">Password</label>
-                <a href="#" id="link-forgot-password" class="auth-link-sm">Forgot password?</a>
-              </div>
-              <div class="input-with-icon" style="margin-top: 6px;">
-                <i data-lucide="lock"></i>
-                <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required autocomplete="current-password">
-                <button type="button" class="btn-toggle-password" id="btn-toggle-login-pass" aria-label="Toggle password visibility">
-                  <i data-lucide="eye"></i>
-                </button>
-              </div>
-            </div>
-
-            <button type="submit" id="btn-submit-login" class="btn btn-primary btn-block btn-lg" style="margin-top: 8px;">
-              <span>Login</span>
-            </button>
-          </form>
-
-          <div class="auth-switch-prompt">
-            Don't have an account? <a href="#" id="link-switch-to-signup" class="auth-highlight-link">Create Account</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Sign Up -->
-  <div id="modal-signup" class="modal-overlay">
-    <div class="modal-content auth-modal-content">
-      <button type="button" class="icon-btn auth-modal-close close-modal" aria-label="Close">
-        <i data-lucide="x"></i>
-      </button>
-
-      <div class="auth-split-container">
-        <!-- Left Hero Panel -->
-        <div class="auth-hero-panel">
-          <div class="logo" style="margin-bottom: 20px;">
-            <i data-lucide="brain-circuit"></i>
-            <span>Where Did My Money Go?</span>
-          </div>
-          <h2 class="auth-hero-title">Start understanding where your money goes.</h2>
-          <p class="auth-hero-desc">Create your private financial environment in seconds. 100% data isolation guaranteed.</p>
-
-          <div class="auth-perks-list">
-            <div class="auth-perk-item">
-              <i data-lucide="check" style="color: var(--success);"></i>
-              <span>Automated behavioral leak detection</span>
-            </div>
-            <div class="auth-perk-item">
-              <i data-lucide="check" style="color: var(--success);"></i>
-              <span>Interactive savings simulator</span>
-            </div>
-            <div class="auth-perk-item">
-              <i data-lucide="check" style="color: var(--success);"></i>
-              <span>Private, dedicated financial coach</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right Form Panel -->
-        <div class="auth-form-panel">
-          <div class="auth-form-header">
-            <h2 class="auth-title">Create Your Account</h2>
-            <p class="auth-subtitle">Start understanding where your money goes.</p>
-          </div>
-
-          <!-- Error Alert Container -->
-          <div id="signup-error-alert" class="auth-alert danger" style="display: none;"></div>
-
-          <form id="form-signup" novalidate>
-            <div class="form-group">
-              <label class="form-label" for="signup-name">Full Name</label>
-              <div class="input-with-icon">
-                <i data-lucide="user"></i>
-                <input type="text" id="signup-name" class="form-control" placeholder="e.g. Parthiv" required autocomplete="name">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="signup-email">Email</label>
-              <div class="input-with-icon">
-                <i data-lucide="mail"></i>
-                <input type="email" id="signup-email" class="form-control" placeholder="Enter your email" required autocomplete="email">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="signup-password">Password</label>
-              <div class="input-with-icon">
-                <i data-lucide="lock"></i>
-                <input type="password" id="signup-password" class="form-control" placeholder="At least 8 characters" required autocomplete="new-password">
-                <button type="button" class="btn-toggle-password" id="btn-toggle-signup-pass" aria-label="Toggle password visibility">
-                  <i data-lucide="eye"></i>
-                </button>
-              </div>
-              <div class="password-hint">Must be 8+ characters with a mix of letters and numbers/symbols.</div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="signup-confirm-password">Confirm Password</label>
-              <div class="input-with-icon">
-                <i data-lucide="lock"></i>
-                <input type="password" id="signup-confirm-password" class="form-control" placeholder="Re-enter your password" required autocomplete="new-password">
-              </div>
-            </div>
-
-            <button type="submit" id="btn-submit-signup" class="btn btn-primary btn-block btn-lg" style="margin-top: 8px;">
-              <span>Create Account</span>
-            </button>
-          </form>
-
-          <div class="auth-switch-prompt">
-            Already have an account? <a href="#" id="link-switch-to-login" class="auth-highlight-link">Login</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Note: Primary Authentication handled directly in #screen-landing portal -->
 
   <!-- Modal: Forgot Password Assistance -->
   <div id="modal-forgot-password" class="modal-overlay">
@@ -960,7 +921,7 @@
       </div>
       <div class="modal-body">
         <div style="text-align: center; margin-bottom: 16px;">
-          <div style="width: 48px; height: 48px; background: rgba(59, 130, 246, 0.15); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: var(--accent); margin-bottom: 8px;">
+          <div style="width: 48px; height: 48px; background: rgba(16, 185, 129, 0.15); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: var(--accent); margin-bottom: 8px;">
             <i data-lucide="key-round"></i>
           </div>
           <h4 style="font-weight: 700; margin-bottom: 6px;">Forgot Your Password?</h4>
@@ -1108,6 +1069,209 @@
       </div>
     </div>
   </div>
+
+  <!-- ==========================================
+       USER PROFILE & DATA CENTER MODAL (START TO END)
+       ========================================== -->
+  <div id="modal-user-data-center" class="modal-overlay">
+    <div class="modal-content dc-modal-content">
+      <div class="dc-modal-header">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div class="profile-avatar-large" id="dc-avatar-preview" style="width: 50px; height: 50px; font-size: 1.25rem;">U</div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h3 class="modal-title" id="dc-header-name" style="margin: 0; font-size: 1.15rem;">User Profile</h3>
+              <span id="dc-header-handle" style="font-size: 0.75rem; color: var(--accent); font-family: var(--font-mono); background: var(--accent-light); padding: 2px 8px; border-radius: 4px;">@user</span>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;" id="dc-header-meta">
+              100% Private Isolated Storage • Permanent Activity Trail
+            </div>
+          </div>
+        </div>
+        <button type="button" class="icon-btn close-modal" aria-label="Close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="dc-tabs-nav">
+        <button type="button" class="dc-tab-btn active" data-tab="tab-profile-edit">
+          <i data-lucide="user" width="15" height="15"></i> Profile Details
+        </button>
+        <button type="button" class="dc-tab-btn" data-tab="tab-audit-trail">
+          <i data-lucide="history" width="15" height="15"></i> Activity History (Start to End)
+        </button>
+        <button type="button" class="dc-tab-btn" data-tab="tab-data-ownership">
+          <i data-lucide="database" width="15" height="15"></i> Data Ownership & Backup
+        </button>
+      </div>
+
+      <!-- Tab 1: Profile & Preferences -->
+      <div id="tab-profile-edit" class="dc-tab-pane active">
+        <form id="form-dc-profile">
+          <div id="dc-profile-alert" class="auth-alert" style="display: none; margin-bottom: 14px;"></div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="dc-input-name">Full Name *</label>
+              <input type="text" id="dc-input-name" class="form-control" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="dc-input-username">Username (@handle) *</label>
+              <input type="text" id="dc-input-username" class="form-control" required>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="dc-input-email">Email Address (Account ID)</label>
+              <input type="email" id="dc-input-email" class="form-control" readonly style="background: var(--bg-primary); opacity: 0.8;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="dc-input-phone">Phone / Contact</label>
+              <input type="tel" id="dc-input-phone" class="form-control" placeholder="+91 ...">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" for="dc-input-bio">Financial Goal / Bio</label>
+            <textarea id="dc-input-bio" class="form-control" rows="2" placeholder="e.g. Saving for home down payment and tracking food delivery expenses."></textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="dc-input-income">Monthly Income (₹)</label>
+              <input type="number" id="dc-input-income" class="form-control" min="0" step="100">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="dc-input-savings-target">Monthly Savings Target (₹)</label>
+              <input type="number" id="dc-input-savings-target" class="form-control" min="0" step="100">
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 12px;">
+            <button type="button" class="btn btn-secondary btn-cancel-modal">Cancel</button>
+            <button type="submit" id="btn-save-dc-profile" class="btn btn-primary" style="box-shadow: 0 0 16px var(--accent-glow);">
+              <i data-lucide="save"></i> Save Profile Details
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tab 2: Activity Audit Trail (Start to End) -->
+      <div id="tab-audit-trail" class="dc-tab-pane">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+          <div>
+            <h4 style="font-size: 0.95rem; font-weight: 700; margin: 0;">Permanent Activity Audit Log</h4>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 2px 0 0;">
+              Every user session, transaction, habit adoption, and security event is securely logged from start to end.
+            </p>
+          </div>
+          <button id="btn-refresh-activity" class="btn btn-secondary btn-sm" title="Refresh Audit Trail">
+            <i data-lucide="refresh-cw" width="14" height="14"></i> Refresh
+          </button>
+        </div>
+
+        <div id="dc-activity-timeline" class="activity-timeline">
+          <div style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.85rem;">
+            Loading activity history...
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Data Ownership & 1-Click Backup Export -->
+      <div id="tab-data-ownership" class="dc-tab-pane">
+        <div class="export-card">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: var(--accent-light); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i data-lucide="archive" width="22" height="22"></i>
+            </div>
+            <div>
+              <h4 style="font-size: 1rem; font-weight: 700; margin: 0;">Your Complete Financial Data Vault</h4>
+              <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 2px 0 0;">
+                You have 100% ownership of your data. Download your complete user history in standard JSON format anytime.
+              </p>
+            </div>
+          </div>
+
+          <div class="export-stats-grid">
+            <div class="export-stat-box">
+              <div class="export-stat-val" id="export-tx-count">0</div>
+              <div class="export-stat-lbl">Transactions Stored</div>
+            </div>
+            <div class="export-stat-box">
+              <div class="export-stat-val" id="export-plans-count">0</div>
+              <div class="export-stat-lbl">Habit Plans</div>
+            </div>
+            <div class="export-stat-box">
+              <div class="export-stat-val" id="export-audit-count">0</div>
+              <div class="export-stat-lbl">Audit Log Events</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+            <div style="font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+              <i data-lucide="lock" width="14" height="14" style="color: var(--success);"></i>
+              <span>Includes full database trail from initial signup to date.</span>
+            </div>
+            <button id="btn-export-all-data" class="btn btn-primary" style="box-shadow: 0 0 20px var(--accent-glow);">
+              <i data-lucide="download"></i> Download Complete Backup (JSON)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       COMMAND PALETTE MODAL (CTRL+K SEARCH)
+       ========================================== -->
+  <div id="modal-command-palette" class="modal-overlay">
+    <div class="modal-content" style="max-width: 520px; padding: 0; overflow: hidden; background: var(--bg-secondary); border-radius: var(--border-radius-lg);">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--border-color); background: var(--bg-tertiary);">
+        <i data-lucide="search" width="18" height="18" style="color: var(--accent);"></i>
+        <input type="text" id="cmd-palette-input" placeholder="Type a screen, command, or action..." style="flex: 1; background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 0.95rem; font-family: inherit;">
+        <span class="cmd-key-hint">ESC</span>
+      </div>
+      <div id="cmd-palette-results" style="max-height: 320px; overflow-y: auto; padding: 8px;">
+        <div class="cmd-item" data-action="navigate" data-screen="screen-dashboard" style="padding: 10px 14px; border-radius: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-primary);">
+          <i data-lucide="layout-dashboard" width="16" height="16"></i>
+          <span>Dashboard Overview</span>
+        </div>
+        <div class="cmd-item" data-action="navigate" data-screen="screen-transactions" style="padding: 10px 14px; border-radius: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-primary);">
+          <i data-lucide="list-collapse" width="16" height="16"></i>
+          <span>Transactions List</span>
+        </div>
+        <div class="cmd-item" data-action="navigate" data-screen="screen-where-did-it-go" style="padding: 10px 14px; border-radius: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-primary);">
+          <i data-lucide="split" width="16" height="16"></i>
+          <span>Where Did My Money Go? (Cash Flow)</span>
+        </div>
+        <div class="cmd-item" data-action="navigate" data-screen="screen-insights" style="padding: 10px 14px; border-radius: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-primary);">
+          <i data-lucide="alert-triangle" width="16" height="16"></i>
+          <span>AI Behavioral Insights</span>
+        </div>
+        <div class="cmd-item" data-action="navigate" data-screen="screen-action-plan" style="padding: 10px 14px; border-radius: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-primary);">
+          <i data-lucide="check-square" width="16" height="16"></i>
+          <span>Savings Action Plan</span>
+        </div>
+        <div class="cmd-item" data-action="navigate" data-screen="screen-chat" style="padding: 10px 14px; border-radius: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-primary);">
+          <i data-lucide="message-square" width="16" height="16"></i>
+          <span>Ask AI Financial Coach</span>
+        </div>
+        <div class="cmd-item" data-action="add-tx" style="padding: 10px 14px; border-radius: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--accent);">
+          <i data-lucide="plus-circle" width="16" height="16"></i>
+          <span>+ Add New Transaction</span>
+        </div>
+        <div class="cmd-item" data-action="open-profile" style="padding: 10px 14px; border-radius: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-primary);">
+          <i data-lucide="user" width="16" height="16"></i>
+          <span>Open Account Profile & Complete Data Vault</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dynamic Toast Container -->
+  <div id="toast-container"></div>
 
   <!-- ==========================================
        APPLICATION JS SCRIPT MODULES

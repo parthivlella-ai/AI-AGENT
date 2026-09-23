@@ -14,20 +14,31 @@ const PORT = process.env.PORT || 8080;
 const JWT_SECRET = process.env.SESSION_SECRET || 'wdmmg_secure_jwt_secret_key_2026';
 const COOKIE_NAME = 'wdmmg_session';
 
-// Ensure data directory exists (support writable /tmp in serverless/Vercel)
+// Ensure data directory exists (support writable /tmp in serverless/Vercel/Render)
 const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
-const dataDir = isServerless ? os.tmpdir() : path.join(__dirname, 'data');
-if (!isServerless && !fs.existsSync(dataDir)) {
+let dataDir = isServerless ? os.tmpdir() : path.join(__dirname, 'data');
+if (!isServerless) {
   try {
-    fs.mkdirSync(dataDir, { recursive: true });
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
   } catch (err) {
-    console.warn('Could not create data directory, using temp:', err.message);
+    console.warn('Could not create data directory, using temp directory:', err.message);
+    dataDir = os.tmpdir();
   }
 }
 
-// Initialize SQLite Database
-const dbPath = path.join(dataDir, 'money_tracker.db');
-const db = new DatabaseSync(dbPath);
+// Initialize SQLite Database with safe fallback
+let db;
+try {
+  const dbPath = path.join(dataDir, 'money_tracker.db');
+  db = new DatabaseSync(dbPath);
+} catch (dbErr) {
+  console.warn('Database initialization failed in dataDir, falling back to temp:', dbErr.message);
+  dataDir = os.tmpdir();
+  const dbPath = path.join(dataDir, 'money_tracker.db');
+  db = new DatabaseSync(dbPath);
+}
 
 // Enable WAL mode & foreign keys (safely fallback if journal mode not supported)
 try {
@@ -41,9 +52,16 @@ db.exec('PRAGMA foreign_keys = ON;');
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
+    username TEXT UNIQUE,
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
+    phone TEXT,
+    bio TEXT,
+    avatar TEXT,
+    monthly_income REAL DEFAULT 0,
+    last_login_at TEXT,
+    login_count INTEGER DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
@@ -86,8 +104,11 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS user_settings (
     user_id TEXT PRIMARY KEY,
     saving_target REAL DEFAULT 2500,
+    monthly_budget REAL DEFAULT 0,
     currency TEXT DEFAULT '₹',
     theme TEXT DEFAULT 'dark',
+    email_notifications INTEGER DEFAULT 1,
+    ai_advice_frequency TEXT DEFAULT 'weekly',
     updated_at TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   );
@@ -102,7 +123,99 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_chat_user ON chat_history(user_id);
+
+  -- Complete User Activity Audit Log (From Start to End)
+  CREATE TABLE IF NOT EXISTS user_activity_logs (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    action_type TEXT NOT NULL,
+    description TEXT NOT NULL,
+    metadata TEXT,
+    ip_address TEXT,
+    timestamp TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_activity_user ON user_activity_logs(user_id);
+  CREATE INDEX IF NOT EXISTS idx_activity_user_time ON user_activity_logs(user_id, timestamp DESC);
+
+  -- User Notifications & Behavioral Alerts
+  CREATE TABLE IF NOT EXISTS user_notifications (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    type TEXT DEFAULT 'info',
+    is_read INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_notif_user ON user_notifications(user_id);
 `);
+
+// Migration helper for existing databases (adds missing columns safely)
+function safeAddColumn(table, column, definition) {
+  try {
+    const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+    if (!cols.some(c => c.name === column)) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition};`);
+    }
+  } catch (err) {
+    // Column already exists or error
+  }
+}
+
+safeAddColumn('users', 'username', 'TEXT');
+safeAddColumn('users', 'phone', 'TEXT');
+safeAddColumn('users', 'bio', 'TEXT');
+safeAddColumn('users', 'avatar', 'TEXT');
+safeAddColumn('users', 'monthly_income', 'REAL DEFAULT 0');
+safeAddColumn('users', 'last_login_at', 'TEXT');
+safeAddColumn('users', 'login_count', 'INTEGER DEFAULT 0');
+safeAddColumn('user_settings', 'monthly_budget', 'REAL DEFAULT 0');
+safeAddColumn('user_settings', 'email_notifications', 'INTEGER DEFAULT 1');
+safeAddColumn('user_settings', 'ai_advice_frequency', "TEXT DEFAULT 'weekly'");
+
+// Create unique index for username
+try {
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username) WHERE username IS NOT NULL;');
+} catch (e) {
+  // Index might already exist
+}
+
+// Activity Logging Helper (Stores complete user journey from start to end)
+function logUserActivity(userId, actionType, description, metadata = null, req = null) {
+  try {
+    const actId = 'act_' + crypto.randomBytes(8).toString('hex');
+    const ip = req ? (req.headers['x-forwarded-for'] || req.ip || req.connection?.remoteAddress || 'unknown') : 'system';
+    const now = new Date().toISOString();
+    const metaStr = metadata ? (typeof metadata === 'string' ? metadata : JSON.stringify(metadata)) : null;
+
+    const stmt = db.prepare(`
+      INSERT INTO user_activity_logs (id, user_id, action_type, description, metadata, ip_address, timestamp)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(actId, userId, actionType, description, metaStr, String(ip).slice(0, 45), now);
+  } catch (err) {
+    console.error('Error logging user activity:', err.message);
+  }
+}
+
+// Notification Helper
+function createNotification(userId, title, message, type = 'info') {
+  try {
+    const notifId = 'notif_' + crypto.randomBytes(8).toString('hex');
+    const now = new Date().toISOString();
+    const stmt = db.prepare(`
+      INSERT INTO user_notifications (id, user_id, title, message, type, is_read, created_at)
+      VALUES (?, ?, ?, ?, ?, 0, ?)
+    `);
+    stmt.run(notifId, userId, title, message, type, now);
+  } catch (err) {
+    console.error('Error creating notification:', err.message);
+  }
+}
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
@@ -152,8 +265,11 @@ function authenticateToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    // Verify user exists in database
-    const stmt = db.prepare('SELECT id, name, email FROM users WHERE id = ?');
+    // Verify user exists in database with all profile fields
+    const stmt = db.prepare(`
+      SELECT id, username, name, email, phone, bio, avatar, monthly_income, last_login_at, login_count, created_at 
+      FROM users WHERE id = ?
+    `);
     const user = stmt.get(decoded.id);
 
     if (!user) {
@@ -170,13 +286,13 @@ function authenticateToken(req, res, next) {
 }
 
 // ==========================================
-// AUTHENTICATION API ROUTES
+// AUTHENTICATION & USER PROFILE API ROUTES
 // ==========================================
 
-// Register
+// Register New User (Stores complete details from start)
 app.post('/api/auth/register', authRateLimiter, async (req, res) => {
   try {
-    const { name, email, password, confirmPassword } = req.body;
+    const { name, email, password, confirmPassword, username, currency, monthlyIncome } = req.body;
 
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
       return res.status(400).json({ error: 'Please enter a valid full name (at least 2 characters).' });
@@ -192,11 +308,24 @@ app.post('/api/auth/register', authRateLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Please enter a valid email address format.' });
     }
 
+    // Format and validate username
+    let cleanUsername = (username || '').trim().toLowerCase();
+    if (!cleanUsername) {
+      // Auto-generate clean username from email prefix
+      cleanUsername = cleanEmail.split('@')[0].replace(/[^a-z0-9_]/g, '') + '_' + crypto.randomBytes(2).toString('hex');
+    } else {
+      if (cleanUsername.length < 3 || cleanUsername.length > 25) {
+        return res.status(400).json({ error: 'Username must be between 3 and 25 characters.' });
+      }
+      if (!/^[a-z0-9_]+$/.test(cleanUsername)) {
+        return res.status(400).json({ error: 'Username can only contain letters, numbers, and underscores.' });
+      }
+    }
+
     if (!password || typeof password !== 'string' || password.length < 8) {
       return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
     }
 
-    // Must have combination of letters, numbers or special chars
     const hasLetter = /[a-zA-Z]/.test(password);
     const hasNumberOrSpecial = /[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
     if (!hasLetter || !hasNumberOrSpecial) {
@@ -207,11 +336,16 @@ app.post('/api/auth/register', authRateLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Passwords do not match.' });
     }
 
-    // Check if user already exists
-    const checkStmt = db.prepare('SELECT id FROM users WHERE email = ?');
-    const existing = checkStmt.get(cleanEmail);
-    if (existing) {
+    // Check if email already exists
+    const emailCheckStmt = db.prepare('SELECT id FROM users WHERE email = ?');
+    if (emailCheckStmt.get(cleanEmail)) {
       return res.status(409).json({ error: 'An account with this email already exists.' });
+    }
+
+    // Check if username already exists
+    const usernameCheckStmt = db.prepare('SELECT id FROM users WHERE username = ?');
+    if (usernameCheckStmt.get(cleanUsername)) {
+      return res.status(409).json({ error: 'This username is already taken. Please pick another.' });
     }
 
     // Hash password
@@ -219,19 +353,36 @@ app.post('/api/auth/register', authRateLimiter, async (req, res) => {
     const passwordHash = await bcrypt.hash(password, saltRounds);
     const userId = 'usr_' + crypto.randomBytes(8).toString('hex');
     const now = new Date().toISOString();
+    const incomeVal = monthlyIncome ? parseFloat(monthlyIncome) || 0 : 0;
+    const currVal = currency || '₹';
 
     const insertUserStmt = db.prepare(`
-      INSERT INTO users (id, name, email, password_hash, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO users (id, username, name, email, password_hash, monthly_income, last_login_at, login_count, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
     `);
-    insertUserStmt.run(userId, name.trim(), cleanEmail, passwordHash, now, now);
+    insertUserStmt.run(userId, cleanUsername, name.trim(), cleanEmail, passwordHash, incomeVal, now, now, now);
 
     // Initialize default settings
     const insertSettingsStmt = db.prepare(`
-      INSERT INTO user_settings (user_id, saving_target, currency, theme, updated_at)
-      VALUES (?, 2500, '₹', 'dark', ?)
+      INSERT INTO user_settings (user_id, saving_target, monthly_budget, currency, theme, updated_at)
+      VALUES (?, 2500, ?, ?, 'dark', ?)
     `);
-    insertSettingsStmt.run(userId, now);
+    insertSettingsStmt.run(userId, incomeVal > 0 ? incomeVal * 0.7 : 0, currVal, now);
+
+    // Log the user's initial start event in their permanent activity log
+    logUserActivity(userId, 'REGISTER', 'User account created and profile initialized', {
+      username: cleanUsername,
+      email: cleanEmail,
+      currency: currVal
+    }, req);
+
+    // Create a personalized welcome notification
+    createNotification(
+      userId,
+      'Welcome to Where Did My Money Go! 🚀',
+      `Hi ${name.trim()}! Your AI Spending Behavior Analyst is ready. Track expenses, test habits, or explore the demo.`,
+      'welcome'
+    );
 
     // Create session token (expires in 7 days)
     const token = jwt.sign({ id: userId, email: cleanEmail }, JWT_SECRET, { expiresIn: '7d' });
@@ -243,14 +394,24 @@ app.post('/api/auth/register', authRateLimiter, async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
+    const userObj = {
+      id: userId,
+      username: cleanUsername,
+      name: name.trim(),
+      email: cleanEmail,
+      phone: '',
+      bio: '',
+      avatar: '',
+      monthly_income: incomeVal,
+      last_login_at: now,
+      login_count: 1,
+      created_at: now
+    };
+
     return res.status(201).json({
       success: true,
       message: 'Account created successfully.',
-      user: {
-        id: userId,
-        name: name.trim(),
-        email: cleanEmail
-      }
+      user: userObj
     });
   } catch (err) {
     console.error('Registration error:', err.message);
@@ -258,27 +419,42 @@ app.post('/api/auth/register', authRateLimiter, async (req, res) => {
   }
 });
 
-// Login
+// Login (Supports login via either Username or Email + Password)
 app.post('/api/auth/login', authRateLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, identifier, password } = req.body;
+    const loginTarget = (identifier || email || '').trim().toLowerCase();
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Please provide both email and password.' });
+    if (!loginTarget || !password) {
+      return res.status(400).json({ error: 'Please enter your username/email and password.' });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
-    const userStmt = db.prepare('SELECT id, name, email, password_hash FROM users WHERE email = ?');
-    const user = userStmt.get(cleanEmail);
+    // Match by email OR username
+    const userStmt = db.prepare(`
+      SELECT id, username, name, email, password_hash, phone, bio, avatar, monthly_income, last_login_at, login_count, created_at 
+      FROM users 
+      WHERE email = ? OR username = ?
+    `);
+    const user = userStmt.get(loginTarget, loginTarget);
 
     if (!user) {
-      return res.status(401).json({ error: 'Email or password is incorrect.' });
+      return res.status(401).json({ error: 'Account not found. Please check your username/email.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      return res.status(401).json({ error: 'Email or password is incorrect.' });
+      return res.status(401).json({ error: 'Incorrect password. Please try again.' });
     }
+
+    const now = new Date().toISOString();
+    const newCount = (user.login_count || 0) + 1;
+
+    // Update login timestamp and count
+    db.prepare('UPDATE users SET last_login_at = ?, login_count = ?, updated_at = ? WHERE id = ?')
+      .run(now, newCount, now, user.id);
+
+    // Record login in activity audit log
+    logUserActivity(user.id, 'LOGIN', `Signed in successfully (Session #${newCount})`, null, req);
 
     // Create session token
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
@@ -290,14 +466,24 @@ app.post('/api/auth/login', authRateLimiter, async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
+    const userObj = {
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      email: user.email,
+      phone: user.phone || '',
+      bio: user.bio || '',
+      avatar: user.avatar || '',
+      monthly_income: user.monthly_income || 0,
+      last_login_at: now,
+      login_count: newCount,
+      created_at: user.created_at
+    };
+
     return res.json({
       success: true,
       message: 'Signed in successfully.',
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email
-      }
+      user: userObj
     });
   } catch (err) {
     console.error('Login error:', err.message);
@@ -305,7 +491,7 @@ app.post('/api/auth/login', authRateLimiter, async (req, res) => {
   }
 });
 
-// Check Current Session / Me
+// Check Current Session / Me (Full User Details)
 app.get('/api/auth/me', (req, res) => {
   const token = req.cookies[COOKIE_NAME] || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
 
@@ -315,7 +501,10 @@ app.get('/api/auth/me', (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const userStmt = db.prepare('SELECT id, name, email FROM users WHERE id = ?');
+    const userStmt = db.prepare(`
+      SELECT id, username, name, email, phone, bio, avatar, monthly_income, last_login_at, login_count, created_at 
+      FROM users WHERE id = ?
+    `);
     const user = userStmt.get(decoded.id);
 
     if (!user) {
@@ -340,6 +529,245 @@ app.post('/api/auth/logout', (req, res) => {
     sameSite: 'lax'
   });
   return res.json({ success: true, message: 'Logged out successfully.' });
+});
+
+// ==========================================
+// USER PROFILE & FULL DATA AUDIT TRAIL API
+// ==========================================
+
+// Get User Profile & Comprehensive Account Stats
+app.get('/api/user/profile', authenticateToken, (req, res) => {
+  try {
+    const user = req.user;
+
+    // Fetch user settings
+    const settingsStmt = db.prepare('SELECT saving_target, monthly_budget, currency, theme FROM user_settings WHERE user_id = ?');
+    const settings = settingsStmt.get(user.id) || { saving_target: 2500, monthly_budget: 0, currency: '₹', theme: 'dark' };
+
+    // Fetch summary statistics
+    const statsStmt = db.prepare(`
+      SELECT 
+        COUNT(*) as total_transactions,
+        COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expense,
+        COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income
+      FROM transactions WHERE user_id = ?
+    `);
+    const stats = statsStmt.get(user.id);
+
+    const plansCountStmt = db.prepare('SELECT COUNT(*) as count FROM action_plans WHERE user_id = ?');
+    const plansCount = plansCountStmt.get(user.id).count;
+
+    const activityCountStmt = db.prepare('SELECT COUNT(*) as count FROM user_activity_logs WHERE user_id = ?');
+    const activityCount = activityCountStmt.get(user.id).count;
+
+    return res.json({
+      user,
+      settings,
+      stats: {
+        totalTransactions: stats.total_transactions,
+        totalExpense: stats.total_expense,
+        totalIncome: stats.total_income,
+        actionPlansCount: plansCount,
+        totalActivitiesLogged: activityCount,
+        memberSince: user.created_at
+      }
+    });
+  } catch (err) {
+    console.error('Get profile error:', err.message);
+    return res.status(500).json({ error: 'Failed to load user profile.' });
+  }
+});
+
+// Update User Profile (Username, Name, Phone, Bio, Avatar, Monthly Income, Currency, Saving Target)
+app.put('/api/user/profile', authenticateToken, (req, res) => {
+  try {
+    const { name, username, phone, bio, avatar, monthlyIncome, currency, savingTarget, monthlyBudget } = req.body;
+    const userId = req.user.id;
+    const now = new Date().toISOString();
+
+    // If username is being changed, validate and check uniqueness
+    let newUsername = req.user.username;
+    if (username && username.trim().toLowerCase() !== (req.user.username || '').toLowerCase()) {
+      newUsername = username.trim().toLowerCase();
+      if (newUsername.length < 3 || newUsername.length > 25 || !/^[a-z0-9_]+$/.test(newUsername)) {
+        return res.status(400).json({ error: 'Username must be 3-25 alphanumeric characters or underscores.' });
+      }
+      const checkStmt = db.prepare('SELECT id FROM users WHERE username = ? AND id != ?');
+      if (checkStmt.get(newUsername, userId)) {
+        return res.status(409).json({ error: 'This username is already taken. Please choose another.' });
+      }
+    }
+
+    const newName = name && name.trim().length >= 2 ? name.trim() : req.user.name;
+    const newPhone = phone !== undefined ? String(phone).trim() : (req.user.phone || '');
+    const newBio = bio !== undefined ? String(bio).trim() : (req.user.bio || '');
+    const newAvatar = avatar !== undefined ? String(avatar).trim() : (req.user.avatar || '');
+    const newIncome = monthlyIncome !== undefined ? parseFloat(monthlyIncome) || 0 : (req.user.monthly_income || 0);
+
+    // Update users table
+    db.prepare(`
+      UPDATE users 
+      SET name = ?, username = ?, phone = ?, bio = ?, avatar = ?, monthly_income = ?, updated_at = ?
+      WHERE id = ?
+    `).run(newName, newUsername, newPhone, newBio, newAvatar, newIncome, now, userId);
+
+    // Update settings if provided
+    if (currency || savingTarget !== undefined || monthlyBudget !== undefined) {
+      db.prepare(`
+        INSERT INTO user_settings (user_id, saving_target, monthly_budget, currency, theme, updated_at)
+        VALUES (?, ?, ?, ?, 'dark', ?)
+        ON CONFLICT(user_id) DO UPDATE SET
+          saving_target = COALESCE(?, saving_target),
+          monthly_budget = COALESCE(?, monthly_budget),
+          currency = COALESCE(?, currency),
+          updated_at = excluded.updated_at
+      `).run(
+        userId,
+        savingTarget !== undefined ? parseFloat(savingTarget) : 2500,
+        monthlyBudget !== undefined ? parseFloat(monthlyBudget) : 0,
+        currency || '₹',
+        now,
+        savingTarget !== undefined ? parseFloat(savingTarget) : null,
+        monthlyBudget !== undefined ? parseFloat(monthlyBudget) : null,
+        currency || null
+      );
+    }
+
+    logUserActivity(userId, 'PROFILE_UPDATE', 'Updated user profile and personal preferences', {
+      name: newName,
+      username: newUsername
+    }, req);
+
+    return res.json({
+      success: true,
+      message: 'Profile updated successfully.',
+      user: {
+        id: userId,
+        username: newUsername,
+        name: newName,
+        email: req.user.email,
+        phone: newPhone,
+        bio: newBio,
+        avatar: newAvatar,
+        monthly_income: newIncome,
+        last_login_at: req.user.last_login_at,
+        login_count: req.user.login_count,
+        created_at: req.user.created_at
+      }
+    });
+  } catch (err) {
+    console.error('Update profile error:', err.message);
+    return res.status(500).json({ error: 'Failed to update profile.' });
+  }
+});
+
+// Get User Activity Audit Log (Complete journey from start to end)
+app.get('/api/user/activity', authenticateToken, (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const stmt = db.prepare(`
+      SELECT id, action_type, description, metadata, ip_address, timestamp 
+      FROM user_activity_logs 
+      WHERE user_id = ? 
+      ORDER BY timestamp DESC 
+      LIMIT ?
+    `);
+    const logs = stmt.all(req.user.id, limit);
+    return res.json(logs);
+  } catch (err) {
+    console.error('Get activity error:', err.message);
+    return res.status(500).json({ error: 'Failed to retrieve activity log.' });
+  }
+});
+
+// Full User Data Export (Download All Stored Data From Start to End)
+app.get('/api/user/export', authenticateToken, (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Fetch everything associated with this user
+    const userStmt = db.prepare('SELECT id, username, name, email, phone, bio, avatar, monthly_income, last_login_at, login_count, created_at, updated_at FROM users WHERE id = ?');
+    const user = userStmt.get(userId);
+
+    const settingsStmt = db.prepare('SELECT saving_target, monthly_budget, currency, theme, email_notifications, ai_advice_frequency FROM user_settings WHERE user_id = ?');
+    const settings = settingsStmt.get(userId) || {};
+
+    const txStmt = db.prepare('SELECT id, amount, date, time, merchant, category, type, payment_method, notes, created_at FROM transactions WHERE user_id = ? ORDER BY date DESC');
+    const transactions = txStmt.all(userId);
+
+    const plansStmt = db.prepare('SELECT id, pattern_id, category, title, recommendation, current_text, target_text, estimated_saving, status, created_at FROM action_plans WHERE user_id = ?');
+    const actionPlans = plansStmt.all(userId);
+
+    const chatStmt = db.prepare('SELECT sender, text, timestamp FROM chat_history WHERE user_id = ? ORDER BY timestamp ASC');
+    const chatHistory = chatStmt.all(userId);
+
+    const logsStmt = db.prepare('SELECT action_type, description, metadata, timestamp FROM user_activity_logs WHERE user_id = ? ORDER BY timestamp ASC');
+    const activityTrail = logsStmt.all(userId);
+
+    logUserActivity(userId, 'DATA_EXPORT', 'Exported complete personal data archive', { totalRecords: transactions.length }, req);
+
+    const exportBundle = {
+      exportMetadata: {
+        exportedAt: new Date().toISOString(),
+        version: '2.0',
+        system: 'Where Did My Money Go? — Smart Expense & Budget Tracker',
+        totalTransactions: transactions.length,
+        totalActionPlans: actionPlans.length,
+        totalChatMessages: chatHistory.length,
+        totalAuditEvents: activityTrail.length
+      },
+      profile: user,
+      preferences: settings,
+      transactions,
+      actionPlans,
+      chatHistory,
+      activityTrail
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="wdmmg_data_${user.username || 'user'}_${Date.now()}.json"`);
+    return res.json(exportBundle);
+  } catch (err) {
+    console.error('Export user data error:', err.message);
+    return res.status(500).json({ error: 'Failed to generate user data export.' });
+  }
+});
+
+// ==========================================
+// USER NOTIFICATIONS API
+// ==========================================
+
+// Get Notifications
+app.get('/api/notifications', authenticateToken, (req, res) => {
+  try {
+    const stmt = db.prepare('SELECT id, title, message, type, is_read, created_at FROM user_notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 30');
+    const notifications = stmt.all(req.user.id);
+    return res.json(notifications);
+  } catch (err) {
+    console.error('Get notifications error:', err.message);
+    return res.status(500).json({ error: 'Failed to load notifications.' });
+  }
+});
+
+// Mark Single Notification as Read
+app.put('/api/notifications/:id/read', authenticateToken, (req, res) => {
+  try {
+    db.prepare('UPDATE user_notifications SET is_read = 1 WHERE id = ? AND user_id = ?')
+      .run(req.params.id, req.user.id);
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to update notification.' });
+  }
+});
+
+// Mark All Notifications as Read
+app.put('/api/notifications/read-all', authenticateToken, (req, res) => {
+  try {
+    db.prepare('UPDATE user_notifications SET is_read = 1 WHERE user_id = ?').run(req.user.id);
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to update notifications.' });
+  }
 });
 
 // Delete Account
@@ -433,6 +861,14 @@ app.post('/api/transactions', authenticateToken, (req, res) => {
       created_at: now
     };
 
+    logUserActivity(
+      req.user.id,
+      'TRANSACTION_CREATE',
+      `Added ${type || 'expense'} of ₹${parseFloat(amount)} at ${merchant.trim()} (${category || 'Other'})`,
+      { txId, amount: parseFloat(amount), merchant: merchant.trim(), category: category || 'Other' },
+      req
+    );
+
     return res.status(201).json(createdTx);
   } catch (err) {
     console.error('Add transaction error:', err.message);
@@ -472,6 +908,14 @@ app.put('/api/transactions/:id', authenticateToken, (req, res) => {
       req.user.id
     );
 
+    logUserActivity(
+      req.user.id,
+      'TRANSACTION_UPDATE',
+      `Updated transaction record at ${(merchant || '').trim() || txId}`,
+      { txId, amount: parseFloat(amount) },
+      req
+    );
+
     return res.json({ success: true, message: 'Transaction updated successfully.' });
   } catch (err) {
     console.error('Update transaction error:', err.message);
@@ -492,6 +936,14 @@ app.delete('/api/transactions/:id', authenticateToken, (req, res) => {
       return res.status(404).json({ error: 'Transaction not found or unauthorized.' });
     }
 
+    logUserActivity(
+      req.user.id,
+      'TRANSACTION_DELETE',
+      `Deleted transaction record ${txId}`,
+      { txId },
+      req
+    );
+
     return res.json({ success: true, message: 'Transaction deleted.' });
   } catch (err) {
     console.error('Delete transaction error:', err.message);
@@ -503,6 +955,13 @@ app.delete('/api/transactions/:id', authenticateToken, (req, res) => {
 app.delete('/api/transactions/all/user', authenticateToken, (req, res) => {
   try {
     db.prepare('DELETE FROM transactions WHERE user_id = ?').run(req.user.id);
+    logUserActivity(
+      req.user.id,
+      'TRANSACTIONS_CLEAR',
+      'Cleared all user transactions',
+      null,
+      req
+    );
     return res.json({ success: true, message: 'All transactions cleared for current user.' });
   } catch (err) {
     console.error('Clear transactions error:', err.message);
@@ -545,6 +1004,14 @@ app.post('/api/transactions/import', authenticateToken, (req, res) => {
       );
       importedCount++;
     }
+
+    logUserActivity(
+      req.user.id,
+      'CSV_IMPORT',
+      `Imported ${importedCount} transactions from CSV data file`,
+      { count: importedCount },
+      req
+    );
 
     return res.json({
       success: true,
@@ -591,6 +1058,14 @@ app.post('/api/transactions/demo', authenticateToken, (req, res) => {
       );
       count++;
     }
+
+    logUserActivity(
+      req.user.id,
+      'DEMO_DATA_LOAD',
+      `Loaded demo portfolio with ${count} sample transactions`,
+      { count },
+      req
+    );
 
     return res.json({
       success: true,
@@ -647,6 +1122,14 @@ app.put('/api/goals/target', authenticateToken, (req, res) => {
     `);
     stmt.run(req.user.id, newTarget, new Date().toISOString());
 
+    logUserActivity(
+      req.user.id,
+      'TARGET_UPDATE',
+      `Updated monthly savings target to ₹${newTarget}`,
+      { target: newTarget },
+      req
+    );
+
     return res.json({ success: true, target: newTarget });
   } catch (err) {
     console.error('Update savings target error:', err.message);
@@ -693,6 +1176,14 @@ app.post('/api/goals/habits', authenticateToken, (req, res) => {
       now
     );
 
+    logUserActivity(
+      req.user.id,
+      'HABIT_CREATE',
+      `Adopted new financial habit: "${habit.title}" (Target saving: ₹${habit.estimatedSaving || 0})`,
+      { habitId, title: habit.title },
+      req
+    );
+
     return res.status(201).json({
       id: habitId,
       patternId: habit.patternId || null,
@@ -723,6 +1214,14 @@ app.put('/api/goals/habits/:id', authenticateToken, (req, res) => {
       return res.status(404).json({ error: 'Habit not found or unauthorized.' });
     }
 
+    logUserActivity(
+      req.user.id,
+      'HABIT_STATUS',
+      `Marked habit ${habitId} as "${status}"`,
+      { habitId, status },
+      req
+    );
+
     return res.json({ success: true, status });
   } catch (err) {
     console.error('Update habit error:', err.message);
@@ -740,6 +1239,14 @@ app.delete('/api/goals/habits/:id', authenticateToken, (req, res) => {
     if (info.changes === 0) {
       return res.status(404).json({ error: 'Habit not found or unauthorized.' });
     }
+
+    logUserActivity(
+      req.user.id,
+      'HABIT_DELETE',
+      `Removed habit ${habitId} from action plan`,
+      { habitId },
+      req
+    );
 
     return res.json({ success: true });
   } catch (err) {
@@ -835,6 +1342,16 @@ app.post('/api/chat', authenticateToken, (req, res) => {
     const stmt = db.prepare('INSERT INTO chat_history (id, user_id, sender, text, timestamp) VALUES (?, ?, ?, ?, ?)');
     stmt.run(msgId, req.user.id, sender, text, now);
 
+    if (sender === 'user') {
+      logUserActivity(
+        req.user.id,
+        'AI_CHAT_MESSAGE',
+        `Asked AI Coach: "${text.slice(0, 60)}${text.length > 60 ? '...' : ''}"`,
+        null,
+        req
+      );
+    }
+
     return res.status(201).json({ id: msgId, sender, text, timestamp: now });
   } catch (err) {
     console.error('Add chat error:', err.message);
@@ -846,11 +1363,23 @@ app.post('/api/chat', authenticateToken, (req, res) => {
 app.delete('/api/chat', authenticateToken, (req, res) => {
   try {
     db.prepare('DELETE FROM chat_history WHERE user_id = ?').run(req.user.id);
+    logUserActivity(
+      req.user.id,
+      'CHAT_CLEAR',
+      'Cleared AI Coach conversation history',
+      null,
+      req
+    );
     return res.json({ success: true, message: 'Chat history cleared.' });
   } catch (err) {
     console.error('Clear chat error:', err.message);
     return res.status(500).json({ error: 'Failed to clear chat.' });
   }
+});
+
+// Render & Cloud Health Check
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', uptime: process.uptime(), timestamp: new Date().toISOString() });
 });
 
 // Serve Static Frontend Assets
@@ -874,8 +1403,8 @@ app.use((err, req, res, next) => {
 
 // Start Server (only when run directly via `node server.js`, not when imported by Vercel / serverless functions)
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`WDMMG Server running on http://localhost:${PORT}`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Money Tracker Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
   });
 }
 
